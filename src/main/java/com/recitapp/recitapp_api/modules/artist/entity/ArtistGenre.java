@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+import java.util.Objects;
+
 @Entity
 @Table(name = "artist_genres")
 @Data
@@ -12,28 +15,44 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ArtistGenre {
 
-    @Id
-    @ManyToOne
+    @EmbeddedId
+    private ArtistGenreId id = new ArtistGenreId();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("artistId")
     @JoinColumn(name = "artist_id")
     private Artist artist;
 
-    @Id
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("genreId")
     @JoinColumn(name = "genre_id")
     private MusicGenre genre;
+}
 
-    @Embeddable
-    public static class ArtistGenreId implements java.io.Serializable {
-        @Column(name = "artist_id")
-        private Long artistId;
+@Embeddable
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+class ArtistGenreId implements Serializable {
+    private static final long serialVersionUID = 1L;
 
-        @Column(name = "genre_id")
-        private Long genreId;
+    @Column(name = "artist_id")
+    private Long artistId;
 
-        // equals and hashCode methods
+    @Column(name = "genre_id")
+    private Long genreId;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ArtistGenreId that = (ArtistGenreId) o;
+        return Objects.equals(artistId, that.artistId) &&
+                Objects.equals(genreId, that.genreId);
     }
 
-    @EmbeddedId
-    private ArtistGenreId id = new ArtistGenreId();
+    @Override
+    public int hashCode() {
+        return Objects.hash(artistId, genreId);
+    }
 }

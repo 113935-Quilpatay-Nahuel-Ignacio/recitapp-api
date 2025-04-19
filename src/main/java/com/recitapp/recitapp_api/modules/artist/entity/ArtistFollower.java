@@ -6,7 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Table(name = "artist_followers")
@@ -15,36 +17,54 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ArtistFollower {
 
-    @Id
-    @ManyToOne
+    @EmbeddedId
+    private ArtistFollowerId id = new ArtistFollowerId();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("userId")
     @JoinColumn(name = "user_id")
     private User user;
 
-    @Id
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("artistId")
     @JoinColumn(name = "artist_id")
     private Artist artist;
 
     @Column(name = "follow_date")
     private LocalDateTime followDate;
 
-    @Embeddable
-    public static class ArtistFollowerId implements java.io.Serializable {
-        @Column(name = "user_id")
-        private Long userId;
-
-        @Column(name = "artist_id")
-        private Long artistId;
-
-        // equals and hashCode methods
-
-    }
-
-    @EmbeddedId
-    private ArtistFollowerId id = new ArtistFollowerId();
-
     @PrePersist
     protected void onCreate() {
-        followDate = LocalDateTime.now();
+        if (followDate == null) {
+            followDate = LocalDateTime.now();
+        }
+    }
+}
+
+@Embeddable
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+class ArtistFollowerId implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column(name = "artist_id")
+    private Long artistId;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ArtistFollowerId that = (ArtistFollowerId) o;
+        return Objects.equals(userId, that.userId) &&
+                Objects.equals(artistId, that.artistId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId, artistId);
     }
 }

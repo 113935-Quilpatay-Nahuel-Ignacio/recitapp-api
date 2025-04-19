@@ -6,7 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Table(name = "event_artists")
@@ -15,13 +17,16 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class EventArtist {
 
-    @Id
-    @ManyToOne
+    @EmbeddedId
+    private EventArtistId id = new EventArtistId();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("eventId")
     @JoinColumn(name = "event_id")
     private Event event;
 
-    @Id
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("artistId")
     @JoinColumn(name = "artist_id")
     private Artist artist;
 
@@ -33,19 +38,32 @@ public class EventArtist {
 
     @Column(name = "appearance_order")
     private Integer appearanceOrder;
+}
 
-    // Configure composite primary key
-    @Embeddable
-    public static class EventArtistId implements java.io.Serializable {
-        @Column(name = "event_id")
-        private Long eventId;
+@Embeddable
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+class EventArtistId implements Serializable {
+    private static final long serialVersionUID = 1L;
 
-        @Column(name = "artist_id")
-        private Long artistId;
+    @Column(name = "event_id")
+    private Long eventId;
 
-        // equals and hashCode methods
+    @Column(name = "artist_id")
+    private Long artistId;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        EventArtistId that = (EventArtistId) o;
+        return Objects.equals(eventId, that.eventId) &&
+                Objects.equals(artistId, that.artistId);
     }
 
-    @EmbeddedId
-    private EventArtistId id = new EventArtistId();
+    @Override
+    public int hashCode() {
+        return Objects.hash(eventId, artistId);
+    }
 }

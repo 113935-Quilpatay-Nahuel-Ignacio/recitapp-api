@@ -6,7 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Objects;
 
 @Entity
 @Table(name = "transaction_details")
@@ -15,31 +17,45 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class TransactionDetail {
 
-    @Id
-    @ManyToOne
+    @EmbeddedId
+    private TransactionDetailId id;
+
+    @MapsId("transactionId")
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transaction_id")
     private Transaction transaction;
 
-    @Id
-    @ManyToOne
+    @MapsId("ticketId")
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ticket_id")
     private Ticket ticket;
 
     @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal unitPrice;
 
-    // Configure composite primary key
     @Embeddable
-    public static class TransactionDetailId implements java.io.Serializable {
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TransactionDetailId implements Serializable {
         @Column(name = "transaction_id")
         private Long transactionId;
 
         @Column(name = "ticket_id")
         private Long ticketId;
 
-        // equals and hashCode methods
-    }
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TransactionDetailId that = (TransactionDetailId) o;
+            return Objects.equals(transactionId, that.transactionId) &&
+                    Objects.equals(ticketId, that.ticketId);
+        }
 
-    @EmbeddedId
-    private TransactionDetailId id = new TransactionDetailId();
+        @Override
+        public int hashCode() {
+            return Objects.hash(transactionId, ticketId);
+        }
+    }
 }
