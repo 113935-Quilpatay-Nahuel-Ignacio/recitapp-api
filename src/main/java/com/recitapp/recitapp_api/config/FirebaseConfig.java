@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 @Configuration
 public class FirebaseConfig {
@@ -21,14 +22,23 @@ public class FirebaseConfig {
     public FirebaseAuth firebaseAuth() throws IOException {
         ClassPathResource resource = new ClassPathResource(firebaseConfigPath);
 
-        FirebaseOptions options = FirebaseOptions.builder()
-                .setCredentials(GoogleCredentials.fromStream(resource.getInputStream()))
-                .build();
-
-        if (FirebaseApp.getApps().isEmpty()) {
-            FirebaseApp.initializeApp(options);
+        if (!resource.exists()) {
+            throw new RuntimeException("El archivo de configuración de Firebase no existe en: " + firebaseConfigPath);
         }
 
-        return FirebaseAuth.getInstance();
+        try (InputStream serviceAccount = resource.getInputStream()) {
+            FirebaseOptions options = FirebaseOptions.builder()
+                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                    .build();
+
+            if (FirebaseApp.getApps().isEmpty()) {
+                FirebaseApp.initializeApp(options);
+            }
+
+            return FirebaseAuth.getInstance();
+        } catch (IOException e) {
+            System.err.println("Error al leer el archivo: " + e.getMessage());
+            throw e;
+        }
     }
 }
