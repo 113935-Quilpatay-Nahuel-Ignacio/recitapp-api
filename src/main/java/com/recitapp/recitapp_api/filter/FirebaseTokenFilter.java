@@ -10,11 +10,11 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
-@RequiredArgsConstructor
-public class FirebaseTokenFilter implements Filter {
+/*@Component
+@RequiredArgsConstructor*/
+public class FirebaseTokenFilter /*implements Filter*/ {
 
-    private final FirebaseAuth firebaseAuth;
+    /*private final FirebaseAuth firebaseAuth;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -50,5 +50,5 @@ public class FirebaseTokenFilter implements Filter {
             httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             httpResponse.getWriter().write("Token requerido");
         }
-    }
+    }*/
 }

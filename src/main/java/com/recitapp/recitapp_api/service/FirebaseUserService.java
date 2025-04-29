@@ -8,11 +8,11 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
-@Service
-@RequiredArgsConstructor
+/*@Service
+@RequiredArgsConstructor*/
 public class FirebaseUserService {
 
-    private final FirebaseAuth firebaseAuth;
+    /*private final FirebaseAuth firebaseAuth;
 
     public UserRecord createUserWithRole(String email, String password, String role) throws Exception {
         UserRecord.CreateRequest request = new UserRecord.CreateRequest()
@@ -37,5 +37,5 @@ public class FirebaseUserService {
 
     public UserRecord getUser(String uid) throws Exception {
         return firebaseAuth.getUser(uid);
-    }
+    }*/
 }

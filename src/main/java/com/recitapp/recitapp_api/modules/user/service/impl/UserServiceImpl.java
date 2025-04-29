@@ -5,6 +5,7 @@ import com.recitapp.recitapp_api.common.exception.RecitappException;
 import com.recitapp.recitapp_api.modules.user.dto.AdminUserRegistrationDTO;
 import com.recitapp.recitapp_api.modules.user.dto.UserRegistrationDTO;
 import com.recitapp.recitapp_api.modules.user.dto.UserResponseDTO;
+import com.recitapp.recitapp_api.modules.user.dto.UserUpdateDTO;
 import com.recitapp.recitapp_api.modules.user.entity.Role;
 import com.recitapp.recitapp_api.modules.user.entity.User;
 import com.recitapp.recitapp_api.modules.user.repository.RoleRepository;
@@ -16,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -132,6 +135,67 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e) {
             throw new RecitappException("Error al crear usuario: " + e.getMessage());
         }
+    }
+
+    @Override
+    public UserResponseDTO getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RecitappException("Usuario no encontrado con ID: " + id));
+        return mapToResponseDTO(user);
+    }
+
+    @Override
+    public List<UserResponseDTO> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::mapToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public UserResponseDTO updateUser(Long id, UserUpdateDTO updateDTO) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RecitappException("Usuario no encontrado con ID: " + id));
+
+        if (updateDTO.getEmail() != null && !updateDTO.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(updateDTO.getEmail())) {
+                throw new RecitappException("El email ya está registrado");
+            }
+            user.setEmail(updateDTO.getEmail());
+        }
+
+        if (updateDTO.getFirstName() != null) {
+            user.setFirstName(updateDTO.getFirstName());
+        }
+
+        if (updateDTO.getLastName() != null) {
+            user.setLastName(updateDTO.getLastName());
+        }
+
+        if (updateDTO.getCountry() != null) {
+            user.setCountry(updateDTO.getCountry());
+        }
+
+        if (updateDTO.getCity() != null) {
+            user.setCity(updateDTO.getCity());
+        }
+
+        if (updateDTO.getPassword() != null && !updateDTO.getPassword().isEmpty()) {
+            user.setPassword(updateDTO.getPassword());
+        }
+
+        User updatedUser = userRepository.save(user);
+        return mapToResponseDTO(updatedUser);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new RecitappException("Usuario no encontrado con ID: " + id);
+        }
+
+        userRepository.deleteById(id);
     }
 
     private UserResponseDTO mapToResponseDTO(User user) {

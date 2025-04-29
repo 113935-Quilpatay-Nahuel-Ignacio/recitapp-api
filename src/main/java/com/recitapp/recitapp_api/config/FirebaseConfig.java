@@ -12,10 +12,10 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.IOException;
 import java.io.InputStream;
 
-@Configuration
+//@Configuration
 public class FirebaseConfig {
 
-    @Value("${firebase.config.path}")
+    /*@Value("${firebase.config.path}")
     private String firebaseConfigPath;
 
     @Bean
@@ -40,5 +40,5 @@ public class FirebaseConfig {
             System.err.println("Error al leer el archivo: " + e.getMessage());
             throw e;
         }
-    }
+    }*/
 }
