@@ -14,7 +14,7 @@ public class RoleInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if (handler instanceof HandlerMethod) {
+        /*if (handler instanceof HandlerMethod) {
             HandlerMethod handlerMethod = (HandlerMethod) handler;
             RequireRole requireRole = handlerMethod.getMethodAnnotation(RequireRole.class);
 
@@ -31,7 +31,7 @@ public class RoleInterceptor implements HandlerInterceptor {
                     return false;
                 }
             }
-        }
+        }*/
 
         return true;
     }

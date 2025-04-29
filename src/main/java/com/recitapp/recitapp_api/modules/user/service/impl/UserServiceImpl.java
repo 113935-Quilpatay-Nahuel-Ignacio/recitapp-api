@@ -15,13 +15,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final FirebaseUserService firebaseUserService;
+    //private final FirebaseUserService firebaseUserService;
 
     @Override
     @Transactional
@@ -38,7 +40,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RecitappException("Rol de comprador no encontrado"));
 
         try {
-            UserRecord firebaseUser;
+           /* UserRecord firebaseUser;
 
             if (registrationDTO.getFirebaseUid() != null && !registrationDTO.getFirebaseUid().isEmpty()) {
                 firebaseUserService.updateUserRole(registrationDTO.getFirebaseUid(), "COMPRADOR");
@@ -54,14 +56,29 @@ public class UserServiceImpl implements UserService {
             User user = getUser(registrationDTO, buyerRole, firebaseUser);
 
             User savedUser = userRepository.save(user);
-            return mapToResponseDTO(savedUser);
+            return mapToResponseDTO(savedUser);*/
 
+            User user = new User();
+            user.setEmail(registrationDTO.getEmail());
+            user.setFirstName(registrationDTO.getFirstName());
+            user.setLastName(registrationDTO.getLastName());
+            user.setDni(registrationDTO.getDni());
+            user.setCountry(registrationDTO.getCountry());
+            user.setCity(registrationDTO.getCity());
+            user.setRole(buyerRole);
+            user.setAuthMethod("EMAIL");
+            user.setPassword(registrationDTO.getPassword());
+
+            user.setFirebaseUid("temp-" + UUID.randomUUID().toString());
+
+            User savedUser = userRepository.save(user);
+            return mapToResponseDTO(savedUser);
         } catch (Exception e) {
             throw new RecitappException("Error al crear usuario: " + e.getMessage());
         }
     }
 
-    private static User getUser(UserRegistrationDTO registrationDTO, Role buyerRole, UserRecord firebaseUser) {
+    /*private static User getUser(UserRegistrationDTO registrationDTO, Role buyerRole, UserRecord firebaseUser) {
         User user = new User();
         user.setEmail(registrationDTO.getEmail());
         user.setFirstName(registrationDTO.getFirstName());
@@ -73,7 +90,7 @@ public class UserServiceImpl implements UserService {
         user.setAuthMethod(registrationDTO.getFirebaseUid() != null ? "FIREBASE" : "EMAIL");
         user.setFirebaseUid(firebaseUser.getUid());
         return user;
-    }
+    }*/
 
     @Override
     @Transactional
@@ -90,11 +107,11 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RecitappException("Rol no encontrado: " + registrationDTO.getRoleName()));
 
         try {
-            UserRecord firebaseUser = firebaseUserService.createUserWithRole(
+            /*UserRecord firebaseUser = firebaseUserService.createUserWithRole(
                     registrationDTO.getEmail(),
                     registrationDTO.getPassword(),
                     registrationDTO.getRoleName()
-            );
+            );*/
 
             User user = new User();
             user.setEmail(registrationDTO.getEmail());
@@ -105,7 +122,9 @@ public class UserServiceImpl implements UserService {
             user.setCity(registrationDTO.getCity());
             user.setRole(role);
             user.setAuthMethod("EMAIL");
-            user.setFirebaseUid(firebaseUser.getUid());
+            user.setPassword(registrationDTO.getPassword());
+            //user.setFirebaseUid(firebaseUser.getUid());
+            user.setFirebaseUid("temp-" + UUID.randomUUID().toString());
 
             User savedUser = userRepository.save(user);
             return mapToResponseDTO(savedUser);
