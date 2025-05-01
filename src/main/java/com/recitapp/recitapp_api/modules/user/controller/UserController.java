@@ -1,8 +1,10 @@
 package com.recitapp.recitapp_api.modules.user.controller;
 
+import com.recitapp.recitapp_api.modules.user.dto.PurchaseHistoryDTO;
 import com.recitapp.recitapp_api.modules.user.dto.UserRegistrationDTO;
 import com.recitapp.recitapp_api.modules.user.dto.UserResponseDTO;
 import com.recitapp.recitapp_api.modules.user.dto.UserUpdateDTO;
+import com.recitapp.recitapp_api.modules.user.service.PurchaseHistoryService;
 import com.recitapp.recitapp_api.modules.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final PurchaseHistoryService purchaseHistoryService;
 
     @PostMapping("/register")
     public ResponseEntity<UserResponseDTO> registerUser(@Valid @RequestBody UserRegistrationDTO registrationDTO) {
@@ -49,4 +52,11 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{userId}/purchases")
+    public ResponseEntity<List<PurchaseHistoryDTO>> getUserPurchaseHistory(@PathVariable Long userId) {
+        List<PurchaseHistoryDTO> purchaseHistory = purchaseHistoryService.getUserPurchaseHistory(userId);
+        return ResponseEntity.ok(purchaseHistory);
+    }
+
 }

@@ -1,6 +1,5 @@
 package com.recitapp.recitapp_api.modules.user.service.impl;
 
-import com.google.firebase.auth.UserRecord;
 import com.recitapp.recitapp_api.common.exception.RecitappException;
 import com.recitapp.recitapp_api.modules.user.dto.AdminUserRegistrationDTO;
 import com.recitapp.recitapp_api.modules.user.dto.UserRegistrationDTO;

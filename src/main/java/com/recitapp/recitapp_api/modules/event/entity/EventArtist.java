@@ -38,32 +38,34 @@ public class EventArtist {
 
     @Column(name = "appearance_order")
     private Integer appearanceOrder;
+
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class EventArtistId implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        @Column(name = "event_id")
+        private Long eventId;
+
+        @Column(name = "artist_id")
+        private Long artistId;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            EventArtistId that = (EventArtistId) o;
+            return Objects.equals(eventId, that.eventId) &&
+                    Objects.equals(artistId, that.artistId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(eventId, artistId);
+        }
+    }
 }
 
-@Embeddable
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class EventArtistId implements Serializable {
-    private static final long serialVersionUID = 1L;
 
-    @Column(name = "event_id")
-    private Long eventId;
-
-    @Column(name = "artist_id")
-    private Long artistId;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        EventArtistId that = (EventArtistId) o;
-        return Objects.equals(eventId, that.eventId) &&
-                Objects.equals(artistId, that.artistId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(eventId, artistId);
-    }
-}

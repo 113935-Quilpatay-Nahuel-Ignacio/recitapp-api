@@ -14,7 +14,10 @@ import lombok.NoArgsConstructor;
 public class NotificationPreference {
 
     @Id
+    private Long id;
+
     @OneToOne
+    @MapsId
     @JoinColumn(name = "user_id")
     private User user;
 
@@ -42,4 +45,3 @@ public class NotificationPreference {
         if (receiveWeeklyNewsletter == null) receiveWeeklyNewsletter = true;
     }
 }
-

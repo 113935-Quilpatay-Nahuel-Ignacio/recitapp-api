@@ -1,4 +1,4 @@
 package com.recitapp.recitapp_api.modules.notification.repository;
 
-public class NotificationHistoryRepository {
+public interface NotificationHistoryRepository {
 }

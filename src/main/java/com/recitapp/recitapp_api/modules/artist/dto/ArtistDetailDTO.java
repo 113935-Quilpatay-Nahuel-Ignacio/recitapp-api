@@ -1,25 +1,20 @@
 package com.recitapp.recitapp_api.modules.artist.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ArtistDTO {
+public class ArtistDetailDTO {
     private Long id;
-
-    @NotBlank(message = "El nombre del artista es obligatorio")
-    @Size(max = 100, message = "El nombre no puede exceder los 100 caracteres")
     private String name;
-
     private String biography;
     private String profileImage;
     private String spotifyUrl;
@@ -27,6 +22,11 @@ public class ArtistDTO {
     private String soundcloudUrl;
     private String instagramUrl;
     private String bandcampUrl;
+    private LocalDateTime registrationDate;
+    private LocalDateTime updatedAt;
     private Boolean active;
-    private List<Long> genreIds;
+    private List<MusicGenreDTO> genres;
+    private Long followerCount;
+    private Long upcomingEventsCount;
+    private Long pastEventsCount;
 }

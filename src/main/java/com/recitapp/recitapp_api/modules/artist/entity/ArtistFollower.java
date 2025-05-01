@@ -16,7 +16,6 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ArtistFollower {
-
     @EmbeddedId
     private ArtistFollowerId id = new ArtistFollowerId();
 
@@ -39,32 +38,32 @@ public class ArtistFollower {
             followDate = LocalDateTime.now();
         }
     }
-}
 
-@Embeddable
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class ArtistFollowerId implements Serializable {
-    private static final long serialVersionUID = 1L;
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ArtistFollowerId implements Serializable {
+        private static final long serialVersionUID = 1L;
 
-    @Column(name = "user_id")
-    private Long userId;
+        @Column(name = "user_id")
+        private Long userId;
 
-    @Column(name = "artist_id")
-    private Long artistId;
+        @Column(name = "artist_id")
+        private Long artistId;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ArtistFollowerId that = (ArtistFollowerId) o;
-        return Objects.equals(userId, that.userId) &&
-                Objects.equals(artistId, that.artistId);
-    }
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ArtistFollowerId that = (ArtistFollowerId) o;
+            return Objects.equals(userId, that.userId) &&
+                    Objects.equals(artistId, that.artistId);
+        }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(userId, artistId);
+        @Override
+        public int hashCode() {
+            return Objects.hash(userId, artistId);
+        }
     }
 }

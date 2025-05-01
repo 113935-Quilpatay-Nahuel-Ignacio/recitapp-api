@@ -15,7 +15,10 @@ import java.time.LocalDateTime;
 public class ArtistStatistics {
 
     @Id
+    private Long id;
+
     @OneToOne
+    @MapsId
     @JoinColumn(name = "artist_id")
     private Artist artist;
 
