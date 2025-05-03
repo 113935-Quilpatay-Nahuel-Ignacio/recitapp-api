@@ -71,7 +71,7 @@ public class UserServiceImpl implements UserService {
             user.setAuthMethod("EMAIL");
             user.setPassword(registrationDTO.getPassword());
 
-            user.setFirebaseUid("temp-" + UUID.randomUUID().toString());
+            user.setFirebaseUid("temp-" + UUID.randomUUID());
 
             User savedUser = userRepository.save(user);
             return mapToResponseDTO(savedUser);
@@ -126,7 +126,7 @@ public class UserServiceImpl implements UserService {
             user.setAuthMethod("EMAIL");
             user.setPassword(registrationDTO.getPassword());
             //user.setFirebaseUid(firebaseUser.getUid());
-            user.setFirebaseUid("temp-" + UUID.randomUUID().toString());
+            user.setFirebaseUid("temp-" + UUID.randomUUID());
 
             User savedUser = userRepository.save(user);
             return mapToResponseDTO(savedUser);
