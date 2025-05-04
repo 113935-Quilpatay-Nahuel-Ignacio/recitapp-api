@@ -45,7 +45,7 @@ public class Event {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "flyer_image")
+    @Column(name = "flyer_image", length = 500)
     private String flyerImage;
 
     @ManyToOne

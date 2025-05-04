@@ -39,7 +39,7 @@ public class User {
     @Column(length = 20, unique = true)
     private String dni;
 
-    @Column(name = "profile_image")
+    @Column(name = "profile_image", length = 500)
     private String profileImage;
 
     @Column(name = "registration_date")

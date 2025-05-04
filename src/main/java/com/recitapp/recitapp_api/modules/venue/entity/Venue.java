@@ -24,7 +24,7 @@ public class Venue {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String address;
 
-    @Column(name = "google_maps_url")
+    @Column(name = "google_maps_url", length = 500)
     private String googleMapsUrl;
 
     @Column(name = "total_capacity")
@@ -33,13 +33,13 @@ public class Venue {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "instagram_url")
+    @Column(name = "instagram_url", length = 500)
     private String instagramUrl;
 
-    @Column(name = "web_url")
+    @Column(name = "web_url", length = 500)
     private String webUrl;
 
-    @Column
+    @Column(length = 500)
     private String image;
 
     @Column(nullable = false)

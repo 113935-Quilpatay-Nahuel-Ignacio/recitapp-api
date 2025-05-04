@@ -24,22 +24,22 @@ public class Artist {
     @Column(columnDefinition = "TEXT")
     private String biography;
 
-    @Column(name = "profile_image")
+    @Column(name = "profile_image", length = 500)
     private String profileImage;
 
-    @Column(name = "spotify_url")
+    @Column(name = "spotify_url", length = 500)
     private String spotifyUrl;
 
-    @Column(name = "youtube_url")
+    @Column(name = "youtube_url", length = 500)
     private String youtubeUrl;
 
-    @Column(name = "soundcloud_url")
+    @Column(name = "soundcloud_url", length = 500)
     private String soundcloudUrl;
 
-    @Column(name = "instagram_url")
+    @Column(name = "instagram_url", length = 500)
     private String instagramUrl;
 
-    @Column(name = "bandcamp_url")
+    @Column(name = "bandcamp_url", length = 500)
     private String bandcampUrl;
 
     @Column(name = "registration_date")

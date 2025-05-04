@@ -6,9 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 @Entity
 @Table(name = "venue_followers")
@@ -41,30 +39,4 @@ public class VenueFollower {
     }
 }
 
-@Embeddable
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class VenueFollowerId implements Serializable {
-    private static final long serialVersionUID = 1L;
 
-    @Column(name = "user_id")
-    private Long userId;
-
-    @Column(name = "venue_id")
-    private Long venueId;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        VenueFollowerId that = (VenueFollowerId) o;
-        return Objects.equals(userId, that.userId) &&
-                Objects.equals(venueId, that.venueId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(userId, venueId);
-    }
-}

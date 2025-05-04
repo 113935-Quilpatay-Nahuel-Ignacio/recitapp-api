@@ -41,7 +41,7 @@ public class Ticket {
     @Column(name = "identification_code", length = 50, unique = true, nullable = false)
     private String identificationCode;
 
-    @Column(name = "qr_code", unique = true, nullable = false)
+    @Column(name = "qr_code", unique = true, nullable = false, length = 500)
     private String qrCode;
 
     @ManyToOne
