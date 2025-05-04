@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Table(name = "venues")
@@ -26,6 +28,12 @@ public class Venue {
 
     @Column(name = "google_maps_url", length = 500)
     private String googleMapsUrl;
+
+    @Column(precision = 10, scale = 7)
+    private BigDecimal latitude;
+
+    @Column(precision = 10, scale = 7)
+    private BigDecimal longitude;
 
     @Column(name = "total_capacity")
     private Integer totalCapacity;
@@ -50,6 +58,9 @@ public class Venue {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "venue", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<VenueSection> sections;
 
     @PrePersist
     protected void onCreate() {

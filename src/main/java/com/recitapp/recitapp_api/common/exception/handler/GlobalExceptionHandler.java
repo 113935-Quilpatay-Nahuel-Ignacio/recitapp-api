@@ -1,6 +1,7 @@
 package com.recitapp.recitapp_api.common.exception.handler;
 
 import com.recitapp.recitapp_api.common.exception.RecitappException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -31,5 +32,22 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, String>> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        String message = ex.getMessage();
+
+        if (message.contains("foreign key constraint fails")) {
+            if (message.contains("venue_sections")) {
+                message = "No se puede eliminar el recinto porque tiene secciones asociadas";
+            } else {
+                message = "No se puede eliminar debido a restricciones de integridad de datos";
+            }
+        }
+
+        Map<String, String> errors = new HashMap<>();
+        errors.put("error", message);
+        return new ResponseEntity<>(errors, HttpStatus.CONFLICT);
     }
 }
