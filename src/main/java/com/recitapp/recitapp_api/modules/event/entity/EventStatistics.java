@@ -16,8 +16,11 @@ import java.time.LocalDateTime;
 public class EventStatistics {
 
     @Id
-    @OneToOne
+    private Long id;
+
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id")
+    @MapsId
     private Event event;
 
     @Column(name = "total_tickets")
@@ -38,4 +41,3 @@ public class EventStatistics {
         updateDate = LocalDateTime.now();
     }
 }
-

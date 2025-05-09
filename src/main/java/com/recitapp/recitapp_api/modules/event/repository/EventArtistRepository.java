@@ -2,6 +2,7 @@ package com.recitapp.recitapp_api.modules.event.repository;
 
 import com.recitapp.recitapp_api.modules.event.entity.EventArtist;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -20,4 +21,11 @@ public interface EventArtistRepository extends JpaRepository<EventArtist, EventA
 
     @Query("SELECT COUNT(ea) FROM EventArtist ea JOIN ea.event e WHERE ea.artist.id = :artistId AND e.startDateTime <= :now")
     Long countPastEventsByArtistId(@Param("artistId") Long artistId, @Param("now") LocalDateTime now);
+
+    List<EventArtist> findByEventId(Long eventId);
+
+    @Modifying
+    @Query("DELETE FROM EventArtist ea WHERE ea.event.id = :eventId")
+    void deleteByEventId(@Param("eventId") Long eventId);
+
 }

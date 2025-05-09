@@ -5,50 +5,39 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * DTO para transferencia de datos de eventos
+ * DTO con información detallada de un evento
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventDTO {
+public class EventDetailDTO {
     private Long id;
-
-    @NotBlank(message = "El nombre del evento es obligatorio")
     private String name;
-
     private String description;
-
-    @NotNull(message = "La fecha y hora de inicio son obligatorias")
     private LocalDateTime startDateTime;
-
-    @NotNull(message = "La fecha y hora de fin son obligatorias")
     private LocalDateTime endDateTime;
-
-    @NotNull(message = "El ID del recinto es obligatorio")
     private Long venueId;
-
     private String venueName;
-
     private Long mainArtistId;
-
     private String mainArtistName;
-
     private String statusName;
-
     private String flyerImage;
 
-    // Campos adicionales que faltaban
+    private Boolean verified;
     private LocalDateTime salesStartDate;
     private LocalDateTime salesEndDate;
+    private LocalDateTime registrationDate;
+    private LocalDateTime updatedAt;
+
+    // IDs de artistas adicionales
     private List<Long> artistIds;
-    private Boolean verified;
-    private Long moderatorId;
-    private Long registrarId;
+
+    // Estadísticas
+    private Long totalTickets;
+    private Long soldTickets;
 }
