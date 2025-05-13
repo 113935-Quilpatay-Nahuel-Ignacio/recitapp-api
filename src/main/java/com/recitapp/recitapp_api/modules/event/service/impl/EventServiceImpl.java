@@ -388,7 +388,7 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new EntityNotFoundException("Moderator not found with ID: " + request.getModeratorId()));
 
         // Verificar que el usuario es un moderador
-        if (!moderator.getRole().getName().equals("MODERADOR")) {
+        if (!moderator.getRole().getName().equals("MODERADOR") && !moderator.getRole().getName().equals("ADMIN")) {
             throw new RecitappException("User does not have moderator permissions");
         }
 
@@ -408,7 +408,6 @@ public class EventServiceImpl implements EventService {
         } else if (event.getStatus().getName().equals("PROXIMO") &&
                 event.getSalesStartDate() != null &&
                 event.getSalesStartDate().isBefore(LocalDateTime.now())) {
-            // Si el evento estaba en estado "PROXIMO" y tiene fechas de venta de entradas,
             // actualizar a "EN_VENTA" si la fecha de inicio de ventas ya pasó
             EventStatus enVentaStatus = eventStatusRepository.findByName("EN_VENTA")
                     .orElseThrow(() -> new EntityNotFoundException("Event status 'EN_VENTA' not found"));
