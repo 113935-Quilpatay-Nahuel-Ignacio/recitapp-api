@@ -7,33 +7,36 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
-    // Contar tickets por evento
+    // Find tickets by event ID
+    List<Ticket> findByEventId(Long eventId);
+
+    // Find tickets by user ID
+    List<Ticket> findByUserId(Long userId);
+
+    // Find tickets by event ID and section ID
+    @Query("SELECT t FROM Ticket t WHERE t.event.id = :eventId AND t.section.id = :sectionId")
+    List<Ticket> findByEventIdAndSectionId(@Param("eventId") Long eventId, @Param("sectionId") Long sectionId);
+
+    // Count tickets by event ID, section ID, and status name
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.event.id = :eventId AND t.section.id = :sectionId AND t.status.name = :statusName")
+    Long countByEventIdAndSectionIdAndStatusName(
+            @Param("eventId") Long eventId,
+            @Param("sectionId") Long sectionId,
+            @Param("statusName") String statusName);
+
+    // Count tickets by event ID
     @Query("SELECT COUNT(t) FROM Ticket t WHERE t.event.id = :eventId")
     Long countByEventId(@Param("eventId") Long eventId);
 
-    // Contar tickets vendidos por evento
+    // Count sold tickets by event ID
     @Query("SELECT COUNT(t) FROM Ticket t WHERE t.event.id = :eventId AND t.status.name = 'VENDIDA'")
     Long countSoldTicketsByEventId(@Param("eventId") Long eventId);
 
-    // Obtener tickets por evento
-    List<Ticket> findByEventId(Long eventId);
-
-    // Obtener tickets por usuario
-    List<Ticket> findByUserId(Long userId);
-
-    // Obtener tickets por evento y estado
-    @Query("SELECT t FROM Ticket t WHERE t.event.id = :eventId AND t.status.name = :statusName")
-    List<Ticket> findByEventIdAndStatus(@Param("eventId") Long eventId, @Param("statusName") String statusName);
-
-    // Contar tickets por evento y sección
-    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.event.id = :eventId AND t.section.id = :sectionId")
-    Long countByEventIdAndSectionId(@Param("eventId") Long eventId, @Param("sectionId") Long sectionId);
-
-    // Contar tickets vendidos por evento y sección
-    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.event.id = :eventId AND t.section.id = :sectionId AND t.status.name = 'VENDIDA'")
-    Long countSoldTicketsByEventIdAndSectionId(@Param("eventId") Long eventId, @Param("sectionId") Long sectionId);
+    // Find by identification code
+    Optional<Ticket> findByIdentificationCode(String identificationCode);
 }

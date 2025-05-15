@@ -144,4 +144,11 @@ public class EventController {
         eventService.cleanupCanceledEvents(cutoffDate);
         return ResponseEntity.noContent().build();
     }
+
+
+    @GetMapping("/{id}/is-sold-out")
+    public ResponseEntity<Boolean> isEventSoldOut(@PathVariable Long id) {
+        Boolean isSoldOut = eventService.isEventSoldOut(id);
+        return ResponseEntity.ok(isSoldOut);
+    }
 }

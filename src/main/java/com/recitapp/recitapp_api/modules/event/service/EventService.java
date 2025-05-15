@@ -137,4 +137,7 @@ public interface EventService {
      * @return true si existe, false en caso contrario
      */
     boolean existsById(Long id);
+
+    boolean isEventSoldOut(Long eventId);
+
 }

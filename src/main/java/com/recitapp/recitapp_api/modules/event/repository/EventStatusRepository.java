@@ -9,9 +9,6 @@ import java.util.Optional;
 @Repository
 public interface EventStatusRepository extends JpaRepository<EventStatus, Long> {
 
-    // Encontrar por nombre
+    // Find by status name
     Optional<EventStatus> findByName(String name);
-
-    // Verificar si existe por nombre
-    boolean existsByName(String name);
 }

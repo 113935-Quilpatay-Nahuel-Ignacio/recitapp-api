@@ -612,4 +612,14 @@ public class EventServiceImpl implements EventService {
             throw new RecitappException("Cannot change from AGOTADO to EN_VENTA");
         }
     }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isEventSoldOut(Long eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with ID: " + eventId));
+
+        return event.getStatus().getName().equals("AGOTADO");
+    }
 }
