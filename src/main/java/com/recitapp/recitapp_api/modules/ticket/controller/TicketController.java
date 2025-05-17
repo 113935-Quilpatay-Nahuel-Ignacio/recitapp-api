@@ -1,9 +1,6 @@
 package com.recitapp.recitapp_api.modules.ticket.controller;
 
-import com.recitapp.recitapp_api.modules.ticket.dto.TicketDTO;
-import com.recitapp.recitapp_api.modules.ticket.dto.TicketPurchaseRequestDTO;
-import com.recitapp.recitapp_api.modules.ticket.dto.TicketPurchaseResponseDTO;
-import com.recitapp.recitapp_api.modules.ticket.dto.TicketTransferRequestDTO;
+import com.recitapp.recitapp_api.modules.ticket.dto.*;
 import com.recitapp.recitapp_api.modules.ticket.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -91,5 +88,13 @@ public class TicketController {
         return ResponseEntity.ok(availableCount);
     }
 
+    @PatchMapping("/{ticketId}/assignment")
+    public ResponseEntity<TicketDTO> updateTicketAssignment(
+            @PathVariable Long ticketId,
+            @Valid @RequestBody TicketAssignmentDTO assignmentDTO) {
+
+        TicketDTO updatedTicket = ticketService.updateTicketAssignment(ticketId, assignmentDTO);
+        return ResponseEntity.ok(updatedTicket);
+    }
 
 }

@@ -1,5 +1,6 @@
 package com.recitapp.recitapp_api.modules.ticket.service;
 
+import com.recitapp.recitapp_api.modules.ticket.dto.TicketAssignmentDTO;
 import com.recitapp.recitapp_api.modules.ticket.dto.TicketDTO;
 import com.recitapp.recitapp_api.modules.ticket.dto.TicketPurchaseRequestDTO;
 import com.recitapp.recitapp_api.modules.ticket.dto.TicketPurchaseResponseDTO;
@@ -28,5 +29,6 @@ public interface TicketService {
 
     Long countAvailableTicketsByEventAndSection(Long eventId, Long sectionId);
 
+    TicketDTO updateTicketAssignment(Long ticketId, TicketAssignmentDTO assignmentDTO);
 
 }

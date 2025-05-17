@@ -8,6 +8,7 @@ import com.recitapp.recitapp_api.modules.event.entity.Promotion;
 import com.recitapp.recitapp_api.modules.event.repository.EventRepository;
 import com.recitapp.recitapp_api.modules.event.repository.EventStatusRepository;
 import com.recitapp.recitapp_api.modules.event.repository.PromotionRepository;
+import com.recitapp.recitapp_api.modules.ticket.dto.TicketAssignmentDTO;
 import com.recitapp.recitapp_api.modules.ticket.dto.TicketDTO;
 import com.recitapp.recitapp_api.modules.ticket.dto.TicketPurchaseRequestDTO;
 import com.recitapp.recitapp_api.modules.ticket.dto.TicketPurchaseResponseDTO;
@@ -285,6 +286,50 @@ public class TicketServiceImpl implements TicketService {
 
         // Calculate available tickets
         return section.getCapacity() - soldTickets;
+    }
+
+    @Transactional
+    public TicketDTO updateTicketAssignment(Long ticketId, TicketAssignmentDTO assignmentDTO) {
+        // Retrieve the ticket by ID
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new EntityNotFoundException("Ticket not found with ID: " + ticketId));
+
+        // Check if the ticket can be modified
+        validateTicketModification(ticket);
+
+        // Update attendee information
+        ticket.setAssignedUserFirstName(assignmentDTO.getAttendeeFirstName());
+        ticket.setAssignedUserLastName(assignmentDTO.getAttendeeLastName());
+        ticket.setAssignedUserDni(assignmentDTO.getAttendeeDni());
+        ticket.setUpdatedAt(java.time.LocalDateTime.now());
+
+        // Save and return the updated ticket
+        Ticket updatedTicket = ticketRepository.save(ticket);
+
+        return mapToTicketDTO(updatedTicket);
+    }
+
+    /**
+     * Validates if a ticket can be modified
+     *
+     * @param ticket The ticket to validate
+     * @throws RecitappException If the ticket cannot be modified
+     */
+    private void validateTicketModification(Ticket ticket) {
+        // Only tickets with "VENDIDA" status can be modified
+        if (!ticket.getStatus().getName().equals("VENDIDA")) {
+            throw new RecitappException("Solo se pueden modificar entradas con estado VENDIDA");
+        }
+
+        // Check if the event has already passed
+        if (ticket.getEvent().getStartDateTime().isBefore(java.time.LocalDateTime.now())) {
+            throw new RecitappException("No se pueden modificar entradas para eventos ya realizados");
+        }
+
+        // Check if the event is canceled
+        if (ticket.getEvent().getStatus().getName().equals("CANCELADO")) {
+            throw new RecitappException("No se pueden modificar entradas para eventos cancelados");
+        }
     }
 
     // Helper methods
