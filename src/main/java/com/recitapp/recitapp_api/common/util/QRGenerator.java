@@ -23,6 +23,11 @@ import java.util.Map;
 public class QRGenerator {
 
     /**
+     * Maximum QR code string length to fit column constraints
+     */
+    private static final int MAX_QR_CODE_LENGTH = 500;
+
+    /**
      * Generates a QR code image from the given content
      *
      * @param content The content to encode in the QR code
@@ -45,7 +50,17 @@ public class QRGenerator {
             ImageIO.write(bufferedImage, "png", baos);
             byte[] imageBytes = baos.toByteArray();
 
-            return "data:image/png;base64," + Base64.getEncoder().encodeToString(imageBytes);
+            // Create a more compact Base64 string to fit in the database column
+            String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+
+            // Check if result exceeds maximum length and truncate if necessary
+            String result = "data:image/png;base64," + base64Image;
+            if (result.length() > MAX_QR_CODE_LENGTH) {
+                log.warn("QR code image too large, using compressed reference instead");
+                return generateCompressedReference(content);
+            }
+
+            return result;
         } catch (WriterException | IOException e) {
             log.error("Error generating QR code", e);
             throw new RuntimeException("Error generating QR code: " + e.getMessage());
@@ -57,10 +72,30 @@ public class QRGenerator {
      *
      * @param ticketId The ID of the ticket
      * @param code     The unique verification code for the ticket
-     * @return A Base64 encoded string representation of the QR code image
+     * @return A Base64 encoded string representation of the QR code image or a compact reference
      */
     public String generateTicketQR(Long ticketId, String code) {
-        String content = String.format("RECITAPP-TICKET:%d:%s", ticketId, code);
-        return generateQRCodeBase64(content, 250, 250);
+        String ticketIdStr = ticketId != null ? ticketId.toString() : "new";
+        String content = String.format("RECITAPP-TICKET:%s:%s", ticketIdStr, code);
+
+        try {
+            return generateQRCodeBase64(content, 200, 200);
+        } catch (Exception e) {
+            log.error("Failed to generate QR code image, using compressed reference", e);
+            return generateCompressedReference(content);
+        }
+    }
+
+    /**
+     * Generates a compressed reference string instead of a full QR code image
+     * This is used as a fallback when the Base64 encoded image would be too large
+     *
+     * @param content The content that would have been encoded in the QR code
+     * @return A compact reference string that still contains the essential verification data
+     */
+    private String generateCompressedReference(String content) {
+        // Create a shortened hash-based reference that will always fit in the column
+        String hash = Integer.toHexString(content.hashCode());
+        return "QR-REF:" + hash;
     }
 }

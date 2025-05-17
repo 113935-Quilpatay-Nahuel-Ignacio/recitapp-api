@@ -78,6 +78,9 @@ public class PromotionalTicketService {
         // Create a list to store the created tickets
         List<Ticket> createdTickets = new ArrayList<>();
 
+        // Create a promotion record if name and description are provided
+        Promotion promotion = createPromotionIfNeeded(event, requestDTO);
+
         // Process each ticket
         for (PromotionalTicketRequestDTO.PromotionalTicketDTO ticketDTO : requestDTO.getTickets()) {
             // Validate section exists
@@ -92,53 +95,80 @@ public class PromotionalTicketService {
             validateSectionAvailability(event.getId(), section.getId());
 
             // Create the ticket
-            Ticket ticket = new Ticket();
-            ticket.setEvent(event);
-            ticket.setSection(section);
-            ticket.setStatus(ticketStatus);
-
-            // For promotional tickets, the price is 0
-            ticket.setSalePrice(BigDecimal.ZERO);
-
-            ticket.setIdentificationCode(generateUniqueTicketCode());
-            ticket.setUser(recipientUser);
-            ticket.setAssignedUserFirstName(ticketDTO.getAttendeeFirstName());
-            ticket.setAssignedUserLastName(ticketDTO.getAttendeeLastName());
-            ticket.setAssignedUserDni(ticketDTO.getAttendeeDni());
-            ticket.setPurchaseDate(LocalDateTime.now());
-            ticket.setIsGift(ticketDTO.isGift());
-            ticket.setRegistrationDate(LocalDateTime.now());
-            ticket.setUpdatedAt(LocalDateTime.now());
-
-            // Generate QR code
-            String qrCode = generateQRCode(ticket);
-            ticket.setQrCode(qrCode);
-
+            Ticket ticket = createTicket(ticketDTO, event, section, ticketStatus, recipientUser, promotion);
             createdTickets.add(ticket);
         }
 
         // Save all tickets
         List<Ticket> savedTickets = ticketRepository.saveAll(createdTickets);
 
-        // Create a promotion record if name and description are provided
-        Promotion promotion = null;
-        if (requestDTO.getPromotionName() != null && !requestDTO.getPromotionName().isBlank()) {
-            promotion = new Promotion();
-            promotion.setEvent(event);
-            promotion.setName(requestDTO.getPromotionName());
-            promotion.setDescription(requestDTO.getPromotionDescription());
-            promotion.setMinimumQuantity(1);
-            promotion.setDiscountPercentage(BigDecimal.valueOf(100)); // 100% discount
-            promotion.setApplyToTotal(true);
-            promotion.setStartDate(LocalDateTime.now());
-            promotion.setEndDate(event.getStartDateTime());
-            promotion.setActive(true);
-            promotion.setPromotionCode("PROMO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        // Build the response
+        return buildPromotionalTicketResponse(requestDTO, event, adminUser, savedTickets);
+    }
 
-            promotion = promotionRepository.save(promotion);
+    /**
+     * Creates a ticket entity from the provided details
+     */
+    private Ticket createTicket(PromotionalTicketRequestDTO.PromotionalTicketDTO ticketDTO,
+                                Event event, VenueSection section, TicketStatus ticketStatus,
+                                User recipientUser, Promotion promotion) {
+
+        Ticket ticket = new Ticket();
+        ticket.setEvent(event);
+        ticket.setSection(section);
+        ticket.setStatus(ticketStatus);
+        ticket.setSalePrice(BigDecimal.ZERO);
+        ticket.setIdentificationCode(generateUniqueTicketCode());
+        ticket.setUser(recipientUser);
+        ticket.setAssignedUserFirstName(ticketDTO.getAttendeeFirstName());
+        ticket.setAssignedUserLastName(ticketDTO.getAttendeeLastName());
+        ticket.setAssignedUserDni(ticketDTO.getAttendeeDni());
+        ticket.setPurchaseDate(LocalDateTime.now());
+        ticket.setIsGift(ticketDTO.isGift());
+        ticket.setRegistrationDate(LocalDateTime.now());
+        ticket.setUpdatedAt(LocalDateTime.now());
+
+        if (promotion != null) {
+            ticket.setPromotion(promotion);
         }
 
-        // Build the response
+        // Generate QR code - now with proper error handling
+        String verificationCode = UUID.randomUUID().toString().substring(0, 12);
+        String qrCode = qrGenerator.generateTicketQR(null, verificationCode);
+        ticket.setQrCode(qrCode);
+
+        return ticket;
+    }
+
+    /**
+     * Creates a promotion if name and description are provided
+     */
+    private Promotion createPromotionIfNeeded(Event event, PromotionalTicketRequestDTO requestDTO) {
+        if (requestDTO.getPromotionName() == null || requestDTO.getPromotionName().isBlank()) {
+            return null;
+        }
+
+        Promotion promotion = new Promotion();
+        promotion.setEvent(event);
+        promotion.setName(requestDTO.getPromotionName());
+        promotion.setDescription(requestDTO.getPromotionDescription());
+        promotion.setMinimumQuantity(1);
+        promotion.setDiscountPercentage(BigDecimal.valueOf(100)); // 100% discount
+        promotion.setApplyToTotal(true);
+        promotion.setStartDate(LocalDateTime.now());
+        promotion.setEndDate(event.getStartDateTime());
+        promotion.setActive(true);
+        promotion.setPromotionCode("PROMO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+
+        return promotionRepository.save(promotion);
+    }
+
+    /**
+     * Builds the response for created promotional tickets
+     */
+    private PromotionalTicketResponseDTO buildPromotionalTicketResponse(
+            PromotionalTicketRequestDTO requestDTO, Event event, User adminUser, List<Ticket> savedTickets) {
+
         return PromotionalTicketResponseDTO.builder()
                 .eventId(event.getId())
                 .eventName(event.getName())
@@ -215,20 +245,6 @@ public class PromotionalTicketService {
      */
     private String generateUniqueTicketCode() {
         return "PROMO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
-
-    /**
-     * Generates a QR code for a ticket
-     *
-     * @param ticket The ticket entity
-     * @return A base64 string representation of the QR code
-     */
-    private String generateQRCode(Ticket ticket) {
-        // Generate a unique code for verification
-        String verificationCode = UUID.randomUUID().toString().substring(0, 12);
-
-        // Use the QRGenerator service to generate a QR code
-        return qrGenerator.generateTicketQR(null, verificationCode);
     }
 
     /**
