@@ -67,102 +67,111 @@ VALUES
     ('ALTERNATIVA', 'Música alternativa y experimental'),
     ('CLASICA', 'Música clásica y de cámara');
 
--- Inserción de venues de ejemplo
-INSERT INTO venues (name, address, google_maps_url, total_capacity, description, instagram_url, web_url, image, active, registration_date, updated_at)
-VALUES
-    (
-        'Estadio Mario Alberto Kempes',
-        'Av. Cárcano s/n, X5021 Córdoba',
-        'https://maps.app.goo.gl/FzVrN7tEvJg9Tezj6',
-        57000,
-        'Principal estadio de la ciudad de Córdoba. Sede habitual de eventos deportivos y conciertos de gran magnitud. Inaugurado para el Mundial de 1978, ha sido renovado en múltiples ocasiones para adaptarse a las necesidades actuales.',
-        'https://www.instagram.com/estadiokempescba/',
-        'https://estadiokempes.cba.gov.ar/',
-        'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Estadio_Mario_Alberto_Kempes.jpg/1200px-Estadio_Mario_Alberto_Kempes.jpg',
-        TRUE,
-        CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP
-    ),
-    (
-        'Quality Espacio',
-        'Av. Cruz Roja Argentina 200, X5016 Córdoba',
-        'https://maps.app.goo.gl/UQEqMBNzXDf1bsBWA',
-        4500,
-        'Moderno recinto multipropósito para eventos musicales y culturales. Cuenta con la mejor tecnología en sonido e iluminación, convirtiéndolo en uno de los espacios preferidos por artistas nacionales e internacionales para presentaciones en la ciudad de Córdoba.',
-        'https://www.instagram.com/qualityespacio/',
-        'https://www.qualityespacio.com/',
-        'https://cordobabn.com/wp-content/uploads/2022/02/quality.jpg',
-        TRUE,
-        CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP
-    );
+-- Este bloque inserta dos venues de ejemplo en la base de datos
+-- Cada venue tiene datos completos incluyendo nombre, dirección, capacidad, etc.
+-- INSERT INTO venues (name, address, google_maps_url, total_capacity, description, instagram_url, web_url, image, active, registration_date, updated_at)
+-- VALUES
+--     (
+--         'Estadio Mario Alberto Kempes',
+--         'Av. Cárcano s/n, X5021 Córdoba',
+--         'https://maps.app.goo.gl/FzVrN7tEvJg9Tezj6',
+--         57000,
+--         'Principal estadio de la ciudad de Córdoba. Sede habitual de eventos deportivos y conciertos de gran magnitud. Inaugurado para el Mundial de 1978, ha sido renovado en múltiples ocasiones para adaptarse a las necesidades actuales.',
+--         'https://www.instagram.com/estadiokempescba/',
+--         'https://estadiokempes.cba.gov.ar/',
+--         'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Estadio_Mario_Alberto_Kempes.jpg/1200px-Estadio_Mario_Alberto_Kempes.jpg',
+--         TRUE,
+--         CURRENT_TIMESTAMP,
+--         CURRENT_TIMESTAMP
+--     ),
+--     (
+--         'Quality Espacio',
+--         'Av. Cruz Roja Argentina 200, X5016 Córdoba',
+--         'https://maps.app.goo.gl/UQEqMBNzXDf1bsBWA',
+--         4500,
+--         'Moderno recinto multipropósito para eventos musicales y culturales. Cuenta con la mejor tecnología en sonido e iluminación, convirtiéndolo en uno de los espacios preferidos por artistas nacionales e internacionales para presentaciones en la ciudad de Córdoba.',
+--         'https://www.instagram.com/qualityespacio/',
+--         'https://www.qualityespacio.com/',
+--         'https://cordobabn.com/wp-content/uploads/2022/02/quality.jpg',
+--         TRUE,
+--         CURRENT_TIMESTAMP,
+--         CURRENT_TIMESTAMP
+--     );
 
--- Creamos también algunas secciones para estos venues
-INSERT INTO venue_sections (venue_id, name, capacity, description, base_price, active)
-SELECT
-    v.id,
-    'Campo',
-    30000,
-    'Zona general de pie con vista directa al escenario',
-    5000.00,
-    TRUE
-FROM venues v
-WHERE v.name = 'Estadio Mario Alberto Kempes';
+-- Los siguientes bloques crean secciones para los venues insertados anteriormente
+-- Cada sección tiene nombre, capacidad, descripción, precio base y estado activo
 
-INSERT INTO venue_sections (venue_id, name, capacity, description, base_price, active)
-SELECT
-    v.id,
-    'Platea Preferencial',
-    15000,
-    'Asientos numerados con excelente vista al escenario',
-    8000.00,
-    TRUE
-FROM venues v
-WHERE v.name = 'Estadio Mario Alberto Kempes';
+-- Este bloque inserta la sección "Campo" para el Estadio Mario Alberto Kempes
+-- INSERT INTO venue_sections (venue_id, name, capacity, description, base_price, active)
+-- SELECT
+--     v.id,
+--     'Campo',
+--     30000,
+--     'Zona general de pie con vista directa al escenario',
+--     5000.00,
+--     TRUE
+-- FROM venues v
+-- WHERE v.name = 'Estadio Mario Alberto Kempes';
 
-INSERT INTO venue_sections (venue_id, name, capacity, description, base_price, active)
-SELECT
-    v.id,
-    'Platea Alta',
-    12000,
-    'Asientos en la parte superior del estadio',
-    3500.00,
-    TRUE
-FROM venues v
-WHERE v.name = 'Estadio Mario Alberto Kempes';
+-- Este bloque inserta la sección "Platea Preferencial" para el Estadio Mario Alberto Kempes
+-- INSERT INTO venue_sections (venue_id, name, capacity, description, base_price, active)
+-- SELECT
+--     v.id,
+--     'Platea Preferencial',
+--     15000,
+--     'Asientos numerados con excelente vista al escenario',
+--     8000.00,
+--     TRUE
+-- FROM venues v
+-- WHERE v.name = 'Estadio Mario Alberto Kempes';
 
-INSERT INTO venue_sections (venue_id, name, capacity, description, base_price, active)
-SELECT
-    v.id,
-    'General',
-    3000,
-    'Acceso general de pie',
-    4000.00,
-    TRUE
-FROM venues v
-WHERE v.name = 'Quality Espacio';
+-- Este bloque inserta la sección "Platea Alta" para el Estadio Mario Alberto Kempes
+-- INSERT INTO venue_sections (venue_id, name, capacity, description, base_price, active)
+-- SELECT
+--     v.id,
+--     'Platea Alta',
+--     12000,
+--     'Asientos en la parte superior del estadio',
+--     3500.00,
+--     TRUE
+-- FROM venues v
+-- WHERE v.name = 'Estadio Mario Alberto Kempes';
 
-INSERT INTO venue_sections (venue_id, name, capacity, description, base_price, active)
-SELECT
-    v.id,
-    'VIP',
-    1000,
-    'Zona exclusiva con mejor vista y servicio de bebidas',
-    7500.00,
-    TRUE
-FROM venues v
-WHERE v.name = 'Quality Espacio';
+-- Este bloque inserta la sección "General" para Quality Espacio
+-- INSERT INTO venue_sections (venue_id, name, capacity, description, base_price, active)
+-- SELECT
+--     v.id,
+--     'General',
+--     3000,
+--     'Acceso general de pie',
+--     4000.00,
+--     TRUE
+-- FROM venues v
+-- WHERE v.name = 'Quality Espacio';
 
-INSERT INTO venue_sections (venue_id, name, capacity, description, base_price, active)
-SELECT
-    v.id,
-    'Palcos',
-    500,
-    'Secciones privadas elevadas con servicio premium',
-    10000.00,
-    TRUE
-FROM venues v
-WHERE v.name = 'Quality Espacio';
+-- Este bloque inserta la sección "VIP" para Quality Espacio
+-- INSERT INTO venue_sections (venue_id, name, capacity, description, base_price, active)
+-- SELECT
+--     v.id,
+--     'VIP',
+--     1000,
+--     'Zona exclusiva con mejor vista y servicio de bebidas',
+--     7500.00,
+--     TRUE
+-- FROM venues v
+-- WHERE v.name = 'Quality Espacio';
+
+-- Este bloque inserta la sección "Palcos" para Quality Espacio
+-- INSERT INTO venue_sections (venue_id, name, capacity, description, base_price, active)
+-- SELECT
+--     v.id,
+--     'Palcos',
+--     500,
+--     'Secciones privadas elevadas con servicio premium',
+--     10000.00,
+--     TRUE
+-- FROM venues v
+-- WHERE v.name = 'Quality Espacio';
 
 INSERT IGNORE INTO users (role_id, email, password, first_name, last_name, dni, registration_date, active, auth_method, wallet_balance)
 SELECT
