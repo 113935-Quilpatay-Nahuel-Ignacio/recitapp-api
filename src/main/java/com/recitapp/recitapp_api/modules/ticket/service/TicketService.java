@@ -31,4 +31,8 @@ public interface TicketService {
 
     TicketDTO updateTicketAssignment(Long ticketId, TicketAssignmentDTO assignmentDTO);
 
+    TicketDTO transferTicketBySearch(Long userId, Long ticketId,
+                                     String recipientFirstName,
+                                     String recipientLastName,
+                                     String recipientDni);
 }

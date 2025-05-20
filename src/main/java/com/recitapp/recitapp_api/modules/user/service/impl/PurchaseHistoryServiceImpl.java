@@ -3,6 +3,7 @@ package com.recitapp.recitapp_api.modules.user.service.impl;
 import com.recitapp.recitapp_api.common.exception.RecitappException;
 import com.recitapp.recitapp_api.modules.transaction.entity.Transaction;
 import com.recitapp.recitapp_api.modules.transaction.entity.TransactionDetail;
+import com.recitapp.recitapp_api.modules.transaction.repository.TransactionDetailRepository;
 import com.recitapp.recitapp_api.modules.transaction.repository.TransactionRepository;
 import com.recitapp.recitapp_api.modules.user.dto.PurchaseHistoryDTO;
 import com.recitapp.recitapp_api.modules.user.dto.TicketPurchaseDTO;
@@ -11,7 +12,6 @@ import com.recitapp.recitapp_api.modules.user.service.PurchaseHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,6 +21,7 @@ public class PurchaseHistoryServiceImpl implements PurchaseHistoryService {
 
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
+    private final TransactionDetailRepository transactionDetailRepository;
 
     @Override
     public List<PurchaseHistoryDTO> getUserPurchaseHistory(Long userId) {
@@ -37,27 +38,26 @@ public class PurchaseHistoryServiceImpl implements PurchaseHistoryService {
     }
 
     private PurchaseHistoryDTO mapToPurchaseHistoryDTO(Transaction transaction) {
-        List<TicketPurchaseDTO> ticketDTOs = new ArrayList<>();
-
-        // Aquí necesitaríamos un repositorio o método para obtener los detalles de transacción
-        // Por ahora dejaré esto como pseudocódigo comentado
-        /*
         List<TransactionDetail> details = transactionDetailRepository.findByTransactionId(transaction.getId());
 
-        ticketDTOs = details.stream()
-                .map(detail -> TicketPurchaseDTO.builder()
-                        .ticketId(detail.getTicket().getId())
-                        .eventName(detail.getTicket().getEvent().getName())
-                        .artistName(detail.getTicket().getEvent().getArtistPrincipal().getName())
-                        .venueName(detail.getTicket().getEvent().getVenue().getName())
-                        .section(detail.getTicket().getSection().getName())
-                        .eventDate(detail.getTicket().getEvent().getStartDateTime())
-                        .price(detail.getUnitPrice())
-                        .ticketStatus(detail.getTicket().getStatus().getName())
-                        .qrCode(detail.getTicket().getQrCode())
-                        .build())
+        List<TicketPurchaseDTO> ticketDTOs = details.stream()
+                .map(detail -> {
+                    var ticket = detail.getTicket();
+                    var event = ticket.getEvent();
+
+                    return TicketPurchaseDTO.builder()
+                            .ticketId(ticket.getId())
+                            .eventName(event.getName())
+                            .artistName(event.getMainArtist() != null ? event.getMainArtist().getName() : "N/A")
+                            .venueName(event.getVenue().getName())
+                            .section(ticket.getSection().getName())
+                            .eventDate(event.getStartDateTime())
+                            .price(detail.getUnitPrice())
+                            .ticketStatus(ticket.getStatus().getName())
+                            .qrCode(ticket.getQrCode())
+                            .build();
+                })
                 .collect(Collectors.toList());
-        */
 
         return PurchaseHistoryDTO.builder()
                 .transactionId(transaction.getId())

@@ -309,6 +309,45 @@ public class TicketServiceImpl implements TicketService {
         return mapToTicketDTO(updatedTicket);
     }
 
+    @Override
+    @Transactional
+    public TicketDTO transferTicketBySearch(Long userId, Long ticketId,
+                                            String recipientFirstName,
+                                            String recipientLastName,
+                                            String recipientDni) {
+        // Verificar que el ticket existe
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new EntityNotFoundException("Ticket no encontrado con ID: " + ticketId));
+
+        // Verificar que el usuario actual es el propietario del ticket
+        if (!ticket.getUser().getId().equals(userId)) {
+            throw new RecitappException("No tienes permiso para transferir este ticket");
+        }
+
+        // Buscar al usuario receptor por nombre, apellido y DNI
+        User recipientUser = userRepository.findByFirstNameAndLastNameAndDni(
+                        recipientFirstName, recipientLastName, recipientDni)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "No se encontró usuario con nombre: " + recipientFirstName +
+                                ", apellido: " + recipientLastName +
+                                ", y DNI: " + recipientDni));
+
+        // Actualizar ticket con el nuevo usuario y usando los datos del usuario como asistente
+        ticket.setUser(recipientUser);
+        ticket.setAssignedUserFirstName(recipientUser.getFirstName());
+        ticket.setAssignedUserLastName(recipientUser.getLastName());
+        ticket.setAssignedUserDni(recipientUser.getDni());
+        ticket.setUpdatedAt(LocalDateTime.now());
+
+        // Generar nuevo código QR
+        String newQrCode = generateQRCode(ticket);
+        ticket.setQrCode(newQrCode);
+
+        Ticket updatedTicket = ticketRepository.save(ticket);
+
+        return mapToTicketDTO(updatedTicket);
+    }
+
     /**
      * Validates if a ticket can be modified
      *
