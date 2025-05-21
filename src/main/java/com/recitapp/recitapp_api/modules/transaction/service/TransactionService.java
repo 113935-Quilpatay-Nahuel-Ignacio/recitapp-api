@@ -19,9 +19,6 @@ public interface TransactionService {
     // RAPP113935-100: Issue payment receipt
     TransactionReceiptDTO generateTransactionReceipt(Long transactionId);
 
-    // RAPP113935-101: Generate transaction report
-    byte[] generateTransactionReport(TransactionReportDTO reportDTO);
-
     // RAPP113935-102: Register refund
     TransactionDTO processRefund(RefundRequestDTO refundRequest);
 
@@ -38,4 +35,7 @@ public interface TransactionService {
     // Additional utility methods
     TransactionDTO getTransactionById(Long transactionId);
     List<TransactionDTO> getAllTransactions(LocalDateTime startDate, LocalDateTime endDate);
+
+    TransactionStatisticsDTO generateTransactionStatistics(TransactionReportDTO reportDTO);
+
 }

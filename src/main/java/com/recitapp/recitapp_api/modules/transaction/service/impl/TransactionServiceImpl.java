@@ -24,11 +24,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -213,53 +213,6 @@ public class TransactionServiceImpl implements TransactionService {
                 .items(items)
                 .isRefund(transaction.getIsRefund())
                 .build();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public byte[] generateTransactionReport(TransactionReportDTO reportDTO) {
-        log.info("Generating transaction report of type: {}", reportDTO.getReportType());
-
-        // In a real implementation, this would generate a PDF/Excel report
-        // For now, we'll just prepare the data and return a placeholder
-
-        List<Transaction> transactions = new ArrayList<>();
-
-        switch (reportDTO.getReportType()) {
-            case "USER":
-                if (reportDTO.getUserId() == null) {
-                    throw new RecitappException("User ID is required for USER report type");
-                }
-                transactions = transactionRepository.findByUserIdAndTransactionDateBetweenOrderByTransactionDateDesc(
-                        reportDTO.getUserId(), reportDTO.getStartDate(), reportDTO.getEndDate());
-                break;
-
-            case "PAYMENT_METHOD":
-                if (reportDTO.getPaymentMethodId() == null) {
-                    throw new RecitappException("Payment method ID is required for PAYMENT_METHOD report type");
-                }
-                transactions = transactionRepository.findByPaymentMethodIdAndTransactionDateBetweenOrderByTransactionDateDesc(
-                        reportDTO.getPaymentMethodId(), reportDTO.getStartDate(), reportDTO.getEndDate());
-                break;
-
-            case "STATUS":
-                if (reportDTO.getStatusName() == null) {
-                    throw new RecitappException("Status name is required for STATUS report type");
-                }
-                transactions = transactionRepository.findByStatusNameAndTransactionDateBetweenOrderByTransactionDateDesc(
-                        reportDTO.getStatusName(), reportDTO.getStartDate(), reportDTO.getEndDate());
-                break;
-
-            case "ALL":
-            default:
-                transactions = transactionRepository.findByTransactionDateBetweenOrderByTransactionDateDesc(
-                        reportDTO.getStartDate(), reportDTO.getEndDate());
-                break;
-        }
-
-        // This would normally generate a real report file
-        // For now, we'll just return a placeholder
-        return "Transaction Report Generated".getBytes();
     }
 
     @Override
@@ -503,6 +456,206 @@ public class TransactionServiceImpl implements TransactionService {
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TransactionStatisticsDTO generateTransactionStatistics(TransactionReportDTO reportDTO) {
+        log.info("Generating transaction statistics of type: {}", reportDTO.getReportType());
+
+        List<Transaction> transactions = new ArrayList<>();
+        TransactionStatisticsDTO.TransactionStatisticsDTOBuilder builder = TransactionStatisticsDTO.builder()
+                .reportType(reportDTO.getReportType())
+                .startDate(reportDTO.getStartDate())
+                .endDate(reportDTO.getEndDate())
+                .generatedDate(LocalDateTime.now());
+
+        switch (reportDTO.getReportType()) {
+            case "USER":
+                if (reportDTO.getUserId() == null) {
+                    throw new RecitappException("User ID is required for USER report type");
+                }
+                transactions = transactionRepository.findByUserIdAndTransactionDateBetweenOrderByTransactionDateDesc(
+                        reportDTO.getUserId(), reportDTO.getStartDate(), reportDTO.getEndDate());
+
+                // Get user details if available
+                userRepository.findById(reportDTO.getUserId()).ifPresent(user -> {
+                    builder.userId(user.getId());
+                    builder.userName(user.getFirstName() + " " + user.getLastName());
+                });
+                break;
+
+            case "PAYMENT_METHOD":
+                if (reportDTO.getPaymentMethodId() == null) {
+                    throw new RecitappException("Payment method ID is required for PAYMENT_METHOD report type");
+                }
+                transactions = transactionRepository.findByPaymentMethodIdAndTransactionDateBetweenOrderByTransactionDateDesc(
+                        reportDTO.getPaymentMethodId(), reportDTO.getStartDate(), reportDTO.getEndDate());
+
+                // Get payment method details if available
+                paymentMethodRepository.findById(reportDTO.getPaymentMethodId()).ifPresent(paymentMethod -> {
+                    builder.paymentMethodId(paymentMethod.getId());
+                    builder.paymentMethodName(paymentMethod.getName());
+                });
+                break;
+
+            case "STATUS":
+                if (reportDTO.getStatusName() == null) {
+                    throw new RecitappException("Status name is required for STATUS report type");
+                }
+                transactions = transactionRepository.findByStatusNameAndTransactionDateBetweenOrderByTransactionDateDesc(
+                        reportDTO.getStatusName(), reportDTO.getStartDate(), reportDTO.getEndDate());
+                builder.statusName(reportDTO.getStatusName());
+                break;
+
+            case "ALL":
+            default:
+                transactions = transactionRepository.findByTransactionDateBetweenOrderByTransactionDateDesc(
+                        reportDTO.getStartDate(), reportDTO.getEndDate());
+                break;
+        }
+
+        // Calculate summary statistics
+        int totalTransactions = transactions.size();
+
+        BigDecimal totalAmount = transactions.stream()
+                .map(Transaction::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal averageAmount = totalTransactions > 0 ?
+                totalAmount.divide(BigDecimal.valueOf(totalTransactions), 2, RoundingMode.HALF_UP) :
+                BigDecimal.ZERO;
+
+        Optional<BigDecimal> maxAmount = transactions.stream()
+                .map(Transaction::getTotalAmount)
+                .max(BigDecimal::compareTo);
+
+        Optional<BigDecimal> minAmount = transactions.stream()
+                .map(Transaction::getTotalAmount)
+                .min(BigDecimal::compareTo);
+
+        builder.totalTransactions(totalTransactions)
+                .totalAmount(totalAmount)
+                .averageAmount(averageAmount)
+                .maxAmount(maxAmount.orElse(BigDecimal.ZERO))
+                .minAmount(minAmount.orElse(BigDecimal.ZERO));
+
+        // Group by status
+        Map<String, List<Transaction>> transactionsByStatus = transactions.stream()
+                .collect(Collectors.groupingBy(t -> t.getStatus().getName()));
+
+        Map<String, Integer> countByStatus = transactionsByStatus.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().size()
+                ));
+
+        Map<String, BigDecimal> amountByStatus = transactionsByStatus.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().stream()
+                                .map(Transaction::getTotalAmount)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                ));
+
+        builder.transactionsByStatus(countByStatus)
+                .amountByStatus(amountByStatus);
+
+        // Group by payment method
+        Map<String, List<Transaction>> transactionsByPaymentMethod = transactions.stream()
+                .collect(Collectors.groupingBy(t -> t.getPaymentMethod().getName()));
+
+        Map<String, Integer> countByPaymentMethod = transactionsByPaymentMethod.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().size()
+                ));
+
+        Map<String, BigDecimal> amountByPaymentMethod = transactionsByPaymentMethod.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().stream()
+                                .map(Transaction::getTotalAmount)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                ));
+
+        builder.transactionsByPaymentMethod(countByPaymentMethod)
+                .amountByPaymentMethod(amountByPaymentMethod);
+
+        // Generate time-based analytics
+        List<TransactionStatisticsDTO.TimeSegmentStatisticsDTO> timeSegments = generateTimeSegmentStatistics(
+                transactions, reportDTO.getStartDate(), reportDTO.getEndDate());
+
+        builder.timeSegmentStatistics(timeSegments);
+
+        return builder.build();
+    }
+
+    /**
+     * Generate time-based statistics by dividing the period into appropriate segments
+     */
+    private List<TransactionStatisticsDTO.TimeSegmentStatisticsDTO> generateTimeSegmentStatistics(
+            List<Transaction> transactions, LocalDateTime startDate, LocalDateTime endDate) {
+
+        // Determine appropriate time segments based on period length
+        long daysBetween = ChronoUnit.DAYS.between(startDate.toLocalDate(), endDate.toLocalDate());
+
+        // Choose segment size based on period length
+        int segmentSizeHours;
+        if (daysBetween <= 1) {
+            // Less than a day: hourly segments
+            segmentSizeHours = 1;
+        } else if (daysBetween <= 7) {
+            // Less than a week: 6-hour segments
+            segmentSizeHours = 6;
+        } else if (daysBetween <= 30) {
+            // Less than a month: daily segments
+            segmentSizeHours = 24;
+        } else if (daysBetween <= 90) {
+            // Less than 3 months: weekly segments
+            segmentSizeHours = 24 * 7;
+        } else {
+            // Longer period: monthly segments
+            segmentSizeHours = 24 * 30;
+        }
+
+        List<TransactionStatisticsDTO.TimeSegmentStatisticsDTO> timeSegments = new ArrayList<>();
+
+        LocalDateTime segmentStart = startDate;
+        while (segmentStart.isBefore(endDate)) {
+            LocalDateTime segmentEnd = segmentStart.plusHours(segmentSizeHours);
+            if (segmentEnd.isAfter(endDate)) {
+                segmentEnd = endDate;
+            }
+
+            // Find transactions in this segment
+            final LocalDateTime finalSegmentStart = segmentStart;
+            final LocalDateTime finalSegmentEnd = segmentEnd;
+
+            List<Transaction> segmentTransactions = transactions.stream()
+                    .filter(t -> t.getTransactionDate() != null &&
+                            !t.getTransactionDate().isBefore(finalSegmentStart) &&
+                            t.getTransactionDate().isBefore(finalSegmentEnd))
+                    .collect(Collectors.toList());
+
+            int transactionCount = segmentTransactions.size();
+            BigDecimal segmentTotal = segmentTransactions.stream()
+                    .map(Transaction::getTotalAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            timeSegments.add(TransactionStatisticsDTO.TimeSegmentStatisticsDTO.builder()
+                    .segmentStart(segmentStart)
+                    .segmentEnd(segmentEnd)
+                    .transactionCount(transactionCount)
+                    .totalAmount(segmentTotal)
+                    .build());
+
+            // Move to next segment
+            segmentStart = segmentEnd;
+        }
+
+        return timeSegments;
+    }
+
 
     // Helper methods
 

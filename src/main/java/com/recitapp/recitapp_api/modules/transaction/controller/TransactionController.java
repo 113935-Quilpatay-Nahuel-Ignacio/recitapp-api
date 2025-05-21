@@ -57,17 +57,12 @@ public class TransactionController {
         return ResponseEntity.ok(receipt);
     }
 
-    // RAPP113935-101: Generate transaction report
     @PostMapping("/report")
     @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
-    public ResponseEntity<byte[]> generateTransactionReport(@RequestBody TransactionReportDTO reportDTO) {
-        byte[] reportContent = transactionService.generateTransactionReport(reportDTO);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "transaction-report.pdf");
-
-        return new ResponseEntity<>(reportContent, headers, HttpStatus.OK);
+    public ResponseEntity<TransactionStatisticsDTO> generateTransactionStatistics(
+            @RequestBody TransactionReportDTO reportDTO) {
+        TransactionStatisticsDTO statistics = transactionService.generateTransactionStatistics(reportDTO);
+        return ResponseEntity.ok(statistics);
     }
 
     // RAPP113935-102: Register refund
