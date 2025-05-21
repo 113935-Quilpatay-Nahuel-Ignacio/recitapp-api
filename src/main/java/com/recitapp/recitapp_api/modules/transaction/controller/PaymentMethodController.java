@@ -1,0 +1,49 @@
+package com.recitapp.recitapp_api.modules.transaction.controller;
+
+import com.recitapp.recitapp_api.annotation.RequireRole;
+import com.recitapp.recitapp_api.modules.transaction.dto.PaymentMethodDTO;
+import com.recitapp.recitapp_api.modules.transaction.service.TransactionService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/payment-methods")
+@RequiredArgsConstructor
+public class PaymentMethodController {
+
+    private final TransactionService transactionService;
+
+    // RAPP113935-103: Update available payment methods
+    @GetMapping
+    public ResponseEntity<List<PaymentMethodDTO>> getActivePaymentMethods() {
+        List<PaymentMethodDTO> paymentMethods = transactionService.getActivePaymentMethods();
+        return ResponseEntity.ok(paymentMethods);
+    }
+
+    @PostMapping
+    @RequireRole({"ADMIN"})
+    public ResponseEntity<PaymentMethodDTO> createPaymentMethod(@RequestBody PaymentMethodDTO paymentMethodDTO) {
+        PaymentMethodDTO createdMethod = transactionService.createPaymentMethod(paymentMethodDTO);
+        return new ResponseEntity<>(createdMethod, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{paymentMethodId}")
+    @RequireRole({"ADMIN"})
+    public ResponseEntity<PaymentMethodDTO> updatePaymentMethod(
+            @PathVariable Long paymentMethodId,
+            @RequestBody PaymentMethodDTO paymentMethodDTO) {
+        PaymentMethodDTO updatedMethod = transactionService.updatePaymentMethod(paymentMethodId, paymentMethodDTO);
+        return ResponseEntity.ok(updatedMethod);
+    }
+
+    @DeleteMapping("/{paymentMethodId}")
+    @RequireRole({"ADMIN"})
+    public ResponseEntity<Void> deletePaymentMethod(@PathVariable Long paymentMethodId) {
+        transactionService.deletePaymentMethod(paymentMethodId);
+        return ResponseEntity.noContent().build();
+    }
+}
