@@ -277,7 +277,8 @@ public class NotificationServiceImpl implements NotificationService {
 
         List<Long> affectedUserIds = getUsersWithTicketsForEvent(eventId);
 
-        NotificationType modificationType = getNotificationTypeByName("CANCELACION"); // Using same type for modifications
+        // Usar el nuevo tipo MODIFICACION en lugar de CANCELACION
+        NotificationType modificationType = getNotificationTypeByName("MODIFICACION");
         NotificationChannel emailChannel = getNotificationChannelByName("EMAIL");
 
         String content = String.format("El evento %s ha sido modificado: %s",

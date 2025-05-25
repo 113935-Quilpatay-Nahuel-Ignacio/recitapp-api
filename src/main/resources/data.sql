@@ -41,7 +41,8 @@ VALUES
     ('POCAS_ENTRADAS', 'Alerta cuando quedan pocas entradas disponibles para un evento guardado'),
     ('CANCELACION', 'Aviso de cambios o cancelación de un evento'),
     ('RECORDATORIO', 'Recordatorio de un evento próximo'),
-    ('RECOMENDACION', 'Sugerencias personalizadas basadas en los gustos del usuario');
+    ('RECOMENDACION', 'Sugerencias personalizadas basadas en los gustos del usuario'),
+    ('MODIFICACION', 'Aviso específico de modificaciones en un evento');
 
 INSERT IGNORE INTO payment_methods (name, active, description)
 VALUES

@@ -5,25 +5,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class NotificationDTO {
-    private Long id;
-    private Long userId;
+public class BulkNotificationDTO {
+    private List<Long> userIds;
     private String typeName;
     private String channelName;
     private String content;
-    private LocalDateTime sentAt;
-    private LocalDateTime readAt;
-    private Boolean isRead;
     private Long relatedEventId;
-    private String relatedEventName;
     private Long relatedArtistId;
-    private String relatedArtistName;
     private Long relatedVenueId;
-    private String relatedVenueName;
 }
