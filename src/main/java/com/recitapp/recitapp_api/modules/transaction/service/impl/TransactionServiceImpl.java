@@ -400,18 +400,18 @@ public class TransactionServiceImpl implements TransactionService {
         User user = userRepository.findById(walletTransactionDTO.getUserId())
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + walletTransactionDTO.getUserId()));
 
-        BigDecimal currentBalance = user.getWalletBalance() != null ?
-                user.getWalletBalance() : BigDecimal.ZERO;
+        Double currentBalance = user.getWalletBalance() != null ?
+                user.getWalletBalance() : 0.0;
 
-        BigDecimal newBalance;
+        Double newBalance;
 
         if ("ADD".equals(walletTransactionDTO.getOperation())) {
-            newBalance = currentBalance.add(walletTransactionDTO.getAmount());
+            newBalance = currentBalance + walletTransactionDTO.getAmount().doubleValue();
         } else if ("SUBTRACT".equals(walletTransactionDTO.getOperation())) {
-            if (currentBalance.compareTo(walletTransactionDTO.getAmount()) < 0) {
+            if (currentBalance < walletTransactionDTO.getAmount().doubleValue()) {
                 throw new RecitappException("Insufficient wallet balance");
             }
-            newBalance = currentBalance.subtract(walletTransactionDTO.getAmount());
+            newBalance = currentBalance - walletTransactionDTO.getAmount().doubleValue();
         } else {
             throw new RecitappException("Invalid operation: " + walletTransactionDTO.getOperation());
         }
@@ -430,7 +430,7 @@ public class TransactionServiceImpl implements TransactionService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
 
-        return user.getWalletBalance() != null ? user.getWalletBalance() : BigDecimal.ZERO;
+        return user.getWalletBalance() != null ? BigDecimal.valueOf(user.getWalletBalance()) : BigDecimal.ZERO;
     }
 
     @Override

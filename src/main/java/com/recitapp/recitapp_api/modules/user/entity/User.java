@@ -68,7 +68,7 @@ public class User {
     @Column(name = "auth_method", length = 20)
     private String authMethod;
 
-    @Column(name = "wallet_balance", precision = 10, scale = 2)
+    @Column(name = "wallet_balance")
     private Double walletBalance;
 
     @Column(name = "firebase_uid", unique = true)
