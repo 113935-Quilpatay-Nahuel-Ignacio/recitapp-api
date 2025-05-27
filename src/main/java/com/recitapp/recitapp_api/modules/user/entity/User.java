@@ -3,6 +3,7 @@ package com.recitapp.recitapp_api.modules.user.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "users")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
@@ -57,11 +59,17 @@ public class User {
     @Column(length = 100)
     private String city;
 
+    @Column(length = 20)
+    private String phone;
+
+    @Column(length = 255)
+    private String address;
+
     @Column(name = "auth_method", length = 20)
     private String authMethod;
 
     @Column(name = "wallet_balance", precision = 10, scale = 2)
-    private BigDecimal walletBalance;
+    private Double walletBalance;
 
     @Column(name = "firebase_uid", unique = true)
     private String firebaseUid;
@@ -75,7 +83,7 @@ public class User {
             active = true;
         }
         if (walletBalance == null) {
-            walletBalance = BigDecimal.ZERO;
+            walletBalance = 0.0;
         }
     }
 }

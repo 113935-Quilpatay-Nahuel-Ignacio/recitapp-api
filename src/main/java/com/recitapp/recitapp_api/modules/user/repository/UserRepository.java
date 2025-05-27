@@ -13,6 +13,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
     boolean existsByDni(String dni);
     Optional<User> findByEmail(String email);
+    Optional<User> findByDni(String dni);
     Optional<User> findByFirebaseUid(String firebaseUid);
 
     // Método para buscar un usuario por nombre, apellido y DNI
