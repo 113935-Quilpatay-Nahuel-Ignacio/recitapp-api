@@ -14,6 +14,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(roleInterceptor);
+        // Temporalmente deshabilitado para debugging
+        // registry.addInterceptor(roleInterceptor);
     }
 }

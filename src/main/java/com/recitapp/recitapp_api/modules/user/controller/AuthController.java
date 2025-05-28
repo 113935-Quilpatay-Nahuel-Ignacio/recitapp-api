@@ -2,17 +2,20 @@ package com.recitapp.recitapp_api.modules.user.controller;
 
 import com.recitapp.recitapp_api.modules.user.dto.*;
 import com.recitapp.recitapp_api.modules.user.service.AuthService;
+import com.recitapp.recitapp_api.modules.user.service.GuestUserService;
 import com.recitapp.recitapp_api.modules.user.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -23,6 +26,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
+    private final GuestUserService guestUserService;
 
     @PostMapping("/login")
     @Operation(summary = "Iniciar sesión", description = "Autentica un usuario y devuelve un token JWT")
@@ -99,10 +103,43 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
             @ApiResponse(responseCode = "409", description = "Email o DNI ya registrado")
     })
-    public ResponseEntity<?> register(@Valid @RequestBody UserRegistrationRequest registrationRequest) {
+    public ResponseEntity<?> register(@Valid @RequestBody UserRegistrationRequest registrationRequest, 
+                                    HttpServletRequest request) {
+        System.out.println("AuthController - Register endpoint called for email: " + registrationRequest.getEmail());
         try {
+            // Verificar si es un usuario invitado
+            boolean isGuest = guestUserService.isGuestRequest(request);
+            GuestUserService.GuestUserInfo guestInfo = null;
+            
+            if (isGuest) {
+                guestInfo = guestUserService.getGuestUserInfo(request);
+            }
+
             AuthResponse authResponse = authService.register(registrationRequest);
-            return ResponseEntity.status(201).body(authResponse);
+            
+            // Agregar información adicional en la respuesta
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", authResponse.getToken());
+            response.put("type", authResponse.getType());
+            response.put("refreshToken", authResponse.getRefreshToken());
+            response.put("userId", authResponse.getUserId());
+            response.put("email", authResponse.getEmail());
+            response.put("firstName", authResponse.getFirstName());
+            response.put("lastName", authResponse.getLastName());
+            response.put("role", authResponse.getRole());
+            response.put("expiresIn", authResponse.getExpiresIn());
+            response.put("wasGuest", isGuest);
+            
+            if (guestInfo != null) {
+                Map<String, Object> guestInfoMap = new HashMap<>();
+                guestInfoMap.put("ipAddress", guestInfo.getIpAddress());
+                guestInfoMap.put("sessionId", guestInfo.getSessionId());
+                response.put("guestInfo", guestInfoMap);
+            } else {
+                response.put("guestInfo", null);
+            }
+            
+            return ResponseEntity.status(201).body(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(409)
                     .body(Map.of("error", "Error de registro", "message", e.getMessage()));
@@ -204,6 +241,40 @@ public class AuthController {
                 return ResponseEntity.badRequest()
                         .body(Map.of("valid", false, "message", "Token inválido o expirado"));
             }
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Error interno del servidor", "message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/guest-status")
+    @Operation(summary = "Verificar estado de usuario invitado", description = "Verifica si el usuario actual es un invitado")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Estado verificado exitosamente")
+    })
+    public ResponseEntity<?> getGuestStatus(HttpServletRequest request) {
+        try {
+            boolean isGuest = guestUserService.isGuestRequest(request);
+            GuestUserService.GuestUserInfo guestInfo = null;
+            
+            if (isGuest) {
+                guestInfo = guestUserService.getGuestUserInfo(request);
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("isGuest", isGuest);
+            response.put("isAuthenticated", !isGuest);
+            response.put("canRegister", isGuest);
+            
+            if (guestInfo != null) {
+                Map<String, Object> guestInfoMap = new HashMap<>();
+                guestInfoMap.put("ipAddress", guestInfo.getIpAddress());
+                guestInfoMap.put("userAgent", guestInfo.getUserAgent());
+                guestInfoMap.put("sessionId", guestInfo.getSessionId());
+                response.put("guestInfo", guestInfoMap);
+            }
+            
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body(Map.of("error", "Error interno del servidor", "message", e.getMessage()));
