@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -73,6 +74,50 @@ public class User {
 
     @Column(name = "firebase_uid", unique = true)
     private String firebaseUid;
+
+    // ================================================================================
+    // RELACIONES BIDIRECCIONALES CON ELIMINACIÓN EN CASCADA
+    // ================================================================================
+
+    // Tokens de refresh - eliminación en cascada
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<RefreshToken> refreshTokens;
+
+    // Tokens de reset de contraseña - eliminación en cascada
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<PasswordResetToken> passwordResetTokens;
+
+    // Preferencias de notificación - eliminación en cascada
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private com.recitapp.recitapp_api.modules.notification.entity.NotificationPreference notificationPreference;
+
+    // Historial de notificaciones - eliminación en cascada
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<com.recitapp.recitapp_api.modules.notification.entity.NotificationHistory> notificationHistory;
+
+    // Transacciones - eliminación en cascada
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<com.recitapp.recitapp_api.modules.transaction.entity.Transaction> transactions;
+
+    // Tickets comprados - eliminación en cascada
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<com.recitapp.recitapp_api.modules.ticket.entity.Ticket> tickets;
+
+    // Eventos guardados - eliminación en cascada
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<com.recitapp.recitapp_api.modules.event.entity.SavedEvent> savedEvents;
+
+    // Artistas seguidos - eliminación en cascada
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<com.recitapp.recitapp_api.modules.artist.entity.ArtistFollower> artistFollowers;
+
+    // Venues seguidos - eliminación en cascada
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<com.recitapp.recitapp_api.modules.venue.entity.VenueFollower> venueFollowers;
+
+    // Sala de espera - eliminación en cascada
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<com.recitapp.recitapp_api.modules.event.entity.WaitingRoom> waitingRoomEntries;
 
     @PrePersist
     protected void onCreate() {

@@ -60,9 +60,22 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Eliminar usuario", description = "Elimina un usuario y todos sus datos relacionados (IRREVERSIBLE)")
+    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(Map.of(
+            "message", "Usuario eliminado exitosamente",
+            "userId", id.toString(),
+            "warning", "Todos los datos relacionados han sido eliminados permanentemente"
+        ));
+    }
+
+    @GetMapping("/{id}/related-data")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Verificar datos relacionados", description = "Muestra todos los datos relacionados que serán eliminados si se elimina este usuario")
+    public ResponseEntity<Map<String, Object>> getUserRelatedData(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserRelatedDataSummary(id));
     }
 
     @GetMapping("/{userId}/purchases")

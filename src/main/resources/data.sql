@@ -181,10 +181,51 @@ INSERT IGNORE INTO users (role_id, email, password, first_name, last_name, dni, 
 (2, 'moderador2@recitapp.com', '$2a$10$0BG2yEAg7QaSGCrlTpTcNeRwoLvoavsjglAVI.4t4ZNZv7reroynC', 'Moderador', 'Eventos', '87654321', NOW(), true, 'EMAIL', 0.00),
 (4, 'usuario@recitapp.com', '$2a$10$uv1EOSw7MNtUB.le1uvjK.d9BhuPxdfYwpfOi5XSsxCs4RpI7oKii', 'Usuario', 'Prueba', '11111111', NOW(), true, 'EMAIL', 100.00);
 
--- Contraseñas de prueba:
--- admin3@recitapp.com: admin123
--- moderador@recitapp.com: moderador123
--- usuario@recitapp.com: password
+-- ================================================================================
+-- USUARIOS DE PRUEBA PARA ASIGNACIÓN AUTOMÁTICA DE ROLES
+-- ================================================================================
+-- Los siguientes usuarios tienen dominios especiales que asignan roles automáticamente:
+-- 
+-- @recitapp-admin.com     → Rol ADMIN (ID: 1)
+-- @recitapp-moderator.com → Rol MODERADOR (ID: 2)  
+-- @recitapp-verifier.com  → Rol REGISTRADOR_EVENTO (ID: 3)
+-- 
+-- Al registrarse a través del endpoint /users/register, automáticamente se les asignará el rol correspondiente
+-- Nota: Estos usuarios están comentados porque se crearán a través del endpoint de registro
+
+-- ================================================================================
+-- EJEMPLOS DE USUARIOS QUE OBTENDRÁN ROL ADMIN AUTOMÁTICAMENTE:
+-- ================================================================================
+-- superadmin@recitapp-admin.com (password: super123)
+-- admin.principal@recitapp-admin.com (password: admin123)
+-- administrador@recitapp-admin.com (password: admin456)
+-- test.admin@recitapp-admin.com (password: test123)
+
+-- ================================================================================
+-- EJEMPLOS DE USUARIOS QUE OBTENDRÁN ROL MODERADOR AUTOMÁTICAMENTE:
+-- ================================================================================
+-- moderador@recitapp-moderator.com (password: mod123)
+-- mod.principal@recitapp-moderator.com (password: moderador123)
+-- moderador.eventos@recitapp-moderator.com (password: eventos123)
+-- test.moderator@recitapp-moderator.com (password: test123)
+
+-- ================================================================================
+-- EJEMPLOS DE USUARIOS QUE OBTENDRÁN ROL REGISTRADOR_EVENTO AUTOMÁTICAMENTE:
+-- ================================================================================
+-- verificador@recitapp-verifier.com (password: verify123)
+-- verifier.principal@recitapp-verifier.com (password: verifier123)
+-- registrador.eventos@recitapp-verifier.com (password: eventos123)
+-- test.verifier@recitapp-verifier.com (password: test123)
+
+-- ================================================================================
+-- INSTRUCCIONES DE PRUEBA:
+-- ================================================================================
+-- Para probar la asignación automática de roles, usa el endpoint POST /users/register con:
+-- 
+-- 1. Email terminado en @recitapp-admin.com → Obtendrá rol ADMIN
+-- 2. Email terminado en @recitapp-moderator.com → Obtendrá rol MODERADOR  
+-- 3. Email terminado en @recitapp-verifier.com → Obtendrá rol REGISTRADOR_EVENTO
+-- 4. Cualquier otro email → Obtendrá rol COMPRADOR por defecto
 
 SELECT 'Script de inicialización de datos ejecutado correctamente' AS mensaje;
 SELECT 'Datos insertados:' AS mensaje

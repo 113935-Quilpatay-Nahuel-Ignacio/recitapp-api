@@ -10,6 +10,7 @@ import com.recitapp.recitapp_api.modules.user.entity.User;
 import com.recitapp.recitapp_api.modules.user.repository.RoleRepository;
 import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -143,9 +145,27 @@ public class AuthService {
             throw new RuntimeException("El DNI ya está registrado");
         }
 
-        // Obtener rol por defecto (COMPRADOR)
-        Role defaultRole = roleRepository.findByName("COMPRADOR")
-                .orElseThrow(() -> new RuntimeException("Rol por defecto no encontrado"));
+        // Determinar el rol basado en el dominio del email (ASIGNACIÓN AUTOMÁTICA)
+        Role userRole;
+        String email = request.getEmail().toLowerCase(); // Normalizar a minúsculas
+        
+        if (email.endsWith("@recitapp-admin.com")) {
+            userRole = roleRepository.findByName("ADMIN")
+                    .orElseThrow(() -> new RuntimeException("Rol ADMIN no encontrado"));
+            log.info("🔐 ASIGNACIÓN AUTOMÁTICA: Rol ADMIN asignado al email: {}", request.getEmail());
+        } else if (email.endsWith("@recitapp-moderator.com")) {
+            userRole = roleRepository.findByName("MODERADOR")
+                    .orElseThrow(() -> new RuntimeException("Rol MODERADOR no encontrado"));
+            log.info("🛡️ ASIGNACIÓN AUTOMÁTICA: Rol MODERADOR asignado al email: {}", request.getEmail());
+        } else if (email.endsWith("@recitapp-verifier.com")) {
+            userRole = roleRepository.findByName("REGISTRADOR_EVENTO")
+                    .orElseThrow(() -> new RuntimeException("Rol REGISTRADOR_EVENTO no encontrado"));
+            log.info("📝 ASIGNACIÓN AUTOMÁTICA: Rol REGISTRADOR_EVENTO asignado al email: {}", request.getEmail());
+        } else {
+            userRole = roleRepository.findByName("COMPRADOR")
+                    .orElseThrow(() -> new RuntimeException("Rol COMPRADOR no encontrado"));
+            log.info("👤 Rol por defecto COMPRADOR asignado al email: {}", request.getEmail());
+        }
 
         // Crear nuevo usuario
         User user = User.builder()
@@ -156,7 +176,7 @@ public class AuthService {
                 .dni(request.getDni())
                 .phone(request.getPhone())
                 .address(request.getAddress())
-                .role(defaultRole)
+                .role(userRole)
                 .active(true)
                 .authMethod("EMAIL")
                 .walletBalance(0.0)
@@ -164,6 +184,8 @@ public class AuthService {
                 .build();
 
         user = userRepository.save(user);
+        log.info("✅ Usuario registrado exitosamente: {} con rol: {} (ID: {})", 
+                user.getEmail(), user.getRole().getName(), user.getRole().getId());
 
         // Generar tokens
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());

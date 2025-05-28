@@ -6,6 +6,7 @@ import com.recitapp.recitapp_api.modules.user.dto.UserResponseDTO;
 import com.recitapp.recitapp_api.modules.user.dto.UserUpdateDTO;
 
 import java.util.List;
+import java.util.Map;
 
 public interface UserService {
     UserResponseDTO registerUser(UserRegistrationDTO registrationDTO);
@@ -14,4 +15,5 @@ public interface UserService {
     List<UserResponseDTO> getAllUsers();
     UserResponseDTO updateUser(Long id, UserUpdateDTO updateDTO);
     void deleteUser(Long id);
+    Map<String, Object> getUserRelatedDataSummary(Long id);
 }
