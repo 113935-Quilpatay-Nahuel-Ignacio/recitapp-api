@@ -342,6 +342,7 @@ public class UserServiceImpl implements UserService {
                 .registrationDate(user.getRegistrationDate())
                 .roleName(user.getRole().getName())
                 .authMethod(user.getAuthMethod())
+                .active(user.getActive())
                 .build();
     }
 }

@@ -22,4 +22,5 @@ public class UserResponseDTO {
     private LocalDateTime registrationDate;
     private String roleName;
     private String authMethod;
+    private Boolean active;
 }
