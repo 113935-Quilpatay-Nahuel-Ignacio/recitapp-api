@@ -47,7 +47,7 @@ public class Venue {
     @Column(name = "web_url", length = 500)
     private String webUrl;
 
-    @Column(length = 500)
+    @Column(length = 2000)
     private String image;
 
     @Column(nullable = false)

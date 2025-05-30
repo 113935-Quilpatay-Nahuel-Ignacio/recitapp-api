@@ -24,7 +24,7 @@ public class Artist {
     @Column(columnDefinition = "TEXT")
     private String biography;
 
-    @Column(name = "profile_image", length = 500)
+    @Column(name = "profile_image", length = 2000)
     private String profileImage;
 
     @Column(name = "spotify_url", length = 500)
