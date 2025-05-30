@@ -117,6 +117,15 @@ public class VenueServiceImpl implements VenueService {
     }
 
     @Override
+    @Transactional
+    public VenueDTO activateVenue(Long id) {
+        Venue venue = findVenueById(id);
+        venue.setActive(true);
+        Venue updatedVenue = venueRepository.save(venue);
+        return mapToDTO(updatedVenue);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<VenueDTO> getAvailableVenues(LocalDateTime startDateTime, LocalDateTime endDateTime) {
         List<Venue> availableVenues = venueRepository.findAvailableVenues(startDateTime, endDateTime);

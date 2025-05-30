@@ -13,6 +13,7 @@ public interface VenueService {
 
     void deleteVenue(Long id);
     VenueDTO deactivateVenue(Long id);
+    VenueDTO activateVenue(Long id);
 
     List<VenueDTO> getAvailableVenues(LocalDateTime startDateTime, LocalDateTime endDateTime);
     VenueAvailabilityDTO checkVenueAvailability(Long venueId, LocalDateTime startDateTime, LocalDateTime endDateTime);

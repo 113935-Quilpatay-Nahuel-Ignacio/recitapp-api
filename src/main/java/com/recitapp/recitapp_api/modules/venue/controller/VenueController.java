@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -21,27 +22,38 @@ public class VenueController {
     private final VenueService venueService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueDTO> createVenue(@Valid @RequestBody VenueDTO venueDTO) {
         VenueDTO createdVenue = venueService.createVenue(venueDTO);
         return new ResponseEntity<>(createdVenue, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueDTO> updateVenue(@PathVariable Long id, @Valid @RequestBody VenueUpdateDTO venueDTO) {
         VenueDTO updatedVenue = venueService.updateVenue(id, venueDTO);
         return ResponseEntity.ok(updatedVenue);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteVenue(@PathVariable Long id) {
         venueService.deleteVenue(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueDTO> deactivateVenue(@PathVariable Long id) {
         VenueDTO deactivatedVenue = venueService.deactivateVenue(id);
         return ResponseEntity.ok(deactivatedVenue);
+    }
+
+    @PatchMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<VenueDTO> activateVenue(@PathVariable Long id) {
+        VenueDTO activatedVenue = venueService.activateVenue(id);
+        return ResponseEntity.ok(activatedVenue);
     }
 
     @GetMapping("/available")
@@ -84,6 +96,7 @@ public class VenueController {
     }
 
     @PostMapping("/{venueId}/sections")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueSectionDTO> createVenueSection(
             @PathVariable Long venueId,
             @Valid @RequestBody VenueSectionDTO sectionDTO) {
@@ -92,6 +105,7 @@ public class VenueController {
     }
 
     @PutMapping("/{venueId}/sections/{sectionId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueSectionDTO> updateVenueSection(
             @PathVariable Long venueId,
             @PathVariable Long sectionId,
@@ -101,6 +115,7 @@ public class VenueController {
     }
 
     @DeleteMapping("/{venueId}/sections/{sectionId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteVenueSection(
             @PathVariable Long venueId,
             @PathVariable Long sectionId) {
