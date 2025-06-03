@@ -36,12 +36,38 @@ public class VenueServiceImpl implements VenueService {
 
         Venue venue = mapToEntity(venueDTO);
         venue.setActive(true);
+        
+        // Lógica de validación de capacidades
+        if (venueDTO.getSections() != null && !venueDTO.getSections().isEmpty()) {
+            int sectionsCapacitySum = venueDTO.getSections().stream()
+                    .mapToInt(VenueSectionDTO::getCapacity)
+                    .sum();
+            
+            if (venueDTO.getTotalCapacity() != null) {
+                // Si se especificó capacidad total, debe coincidir con la suma de secciones
+                if (!venueDTO.getTotalCapacity().equals(sectionsCapacitySum)) {
+                    throw new RecitappException(
+                        String.format("La capacidad total especificada (%d) no coincide con la suma de las capacidades de las secciones (%d). " +
+                                     "Las capacidades deben ser iguales.", 
+                                     venueDTO.getTotalCapacity(), sectionsCapacitySum)
+                    );
+                }
+            } else {
+                // Si no se especificó capacidad total, se calcula automáticamente
+                venue.setTotalCapacity(sectionsCapacitySum);
+            }
+        } else if (venueDTO.getTotalCapacity() == null) {
+            // Si no hay secciones ni capacidad total especificada, se establece en 0
+            venue.setTotalCapacity(0);
+        }
+        
         Venue savedVenue = venueRepository.save(venue);
 
-        // Si se proporcionaron secciones, crearlas
+        // Si se proporcionaron secciones, crearlas después de guardar el venue
         if (venueDTO.getSections() != null && !venueDTO.getSections().isEmpty()) {
-            venueDTO.getSections().forEach(sectionDTO ->
-                    createVenueSection(savedVenue.getId(), sectionDTO));
+            for (VenueSectionDTO sectionDTO : venueDTO.getSections()) {
+                createVenueSectionInternal(savedVenue.getId(), sectionDTO);
+            }
         }
 
         return mapToDTO(savedVenue);
@@ -55,6 +81,20 @@ public class VenueServiceImpl implements VenueService {
         if (!venue.getName().equals(venueDTO.getName()) &&
                 venueRepository.existsByName(venueDTO.getName())) {
             throw new RecitappException("Ya existe otro recinto con el nombre: " + venueDTO.getName());
+        }
+
+        // Validar capacidad total si se está actualizando
+        if (venueDTO.getTotalCapacity() != null) {
+            Integer currentSectionsCapacity = venueSectionRepository.calculateTotalCapacity(id);
+            if (currentSectionsCapacity != null && currentSectionsCapacity > 0) {
+                if (!venueDTO.getTotalCapacity().equals(currentSectionsCapacity)) {
+                    throw new RecitappException(
+                        String.format("La nueva capacidad total (%d) no coincide con la suma de las capacidades de las secciones existentes (%d). " +
+                                     "Para cambiar la capacidad total, primero ajuste las capacidades de las secciones.", 
+                                     venueDTO.getTotalCapacity(), currentSectionsCapacity)
+                    );
+                }
+            }
         }
 
         if (venueDTO.getName() != null) {
@@ -228,6 +268,21 @@ public class VenueServiceImpl implements VenueService {
     @Transactional
     public VenueSectionDTO createVenueSection(Long venueId, VenueSectionDTO sectionDTO) {
         Venue venue = findVenueById(venueId);
+        
+        // Validar que la nueva sección no haga que se exceda la capacidad total especificada
+        if (venue.getTotalCapacity() != null) {
+            Integer currentSectionsCapacity = venueSectionRepository.calculateTotalCapacity(venueId);
+            if (currentSectionsCapacity == null) currentSectionsCapacity = 0;
+            
+            int newTotalCapacity = currentSectionsCapacity + sectionDTO.getCapacity();
+            if (newTotalCapacity > venue.getTotalCapacity()) {
+                throw new RecitappException(
+                    String.format("No se puede crear la sección. La capacidad resultante (%d) excedería la capacidad total del recinto (%d). " +
+                                 "Capacidad disponible: %d", 
+                                 newTotalCapacity, venue.getTotalCapacity(), venue.getTotalCapacity() - currentSectionsCapacity)
+                );
+            }
+        }
 
         VenueSection section = new VenueSection();
         section.setVenue(venue);
@@ -239,22 +294,62 @@ public class VenueServiceImpl implements VenueService {
 
         VenueSection savedSection = venueSectionRepository.save(section);
 
-        // Actualizar la capacidad total del recinto
-        updateVenueTotalCapacity(venueId);
+        // Actualizar la capacidad total del recinto si no estaba especificada
+        if (venue.getTotalCapacity() == null) {
+            updateVenueTotalCapacity(venueId);
+        }
 
+        return mapSectionToDTO(savedSection);
+    }
+    
+    /**
+     * Método interno para crear secciones sin validaciones de capacidad
+     * Se usa durante la creación inicial del venue cuando las validaciones ya se hicieron
+     */
+    private VenueSectionDTO createVenueSectionInternal(Long venueId, VenueSectionDTO sectionDTO) {
+        Venue venue = findVenueById(venueId);
+
+        VenueSection section = new VenueSection();
+        section.setVenue(venue);
+        section.setName(sectionDTO.getName());
+        section.setCapacity(sectionDTO.getCapacity());
+        section.setDescription(sectionDTO.getDescription());
+        section.setBasePrice(sectionDTO.getBasePrice());
+        section.setActive(true);
+
+        VenueSection savedSection = venueSectionRepository.save(section);
         return mapSectionToDTO(savedSection);
     }
 
     @Override
     @Transactional
     public VenueSectionDTO updateVenueSection(Long venueId, Long sectionId, VenueSectionDTO sectionDTO) {
-        findVenueById(venueId);
+        Venue venue = findVenueById(venueId);
 
         VenueSection section = venueSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new RecitappException("Sección no encontrada con ID: " + sectionId));
 
         if (!section.getVenue().getId().equals(venueId)) {
             throw new RecitappException("La sección no pertenece al recinto especificado");
+        }
+
+        // Validar capacidad si se está actualizando y el venue tiene capacidad total especificada
+        if (sectionDTO.getCapacity() != null && venue.getTotalCapacity() != null) {
+            Integer currentSectionsCapacity = venueSectionRepository.calculateTotalCapacity(venueId);
+            if (currentSectionsCapacity == null) currentSectionsCapacity = 0;
+            
+            // Calcular nueva capacidad total considerando el cambio en esta sección
+            int capacityDifference = sectionDTO.getCapacity() - section.getCapacity();
+            int newTotalCapacity = currentSectionsCapacity + capacityDifference;
+            
+            if (newTotalCapacity > venue.getTotalCapacity()) {
+                throw new RecitappException(
+                    String.format("No se puede actualizar la sección. La capacidad resultante (%d) excedería la capacidad total del recinto (%d). " +
+                                 "Capacidad máxima permitida para esta sección: %d", 
+                                 newTotalCapacity, venue.getTotalCapacity(), 
+                                 section.getCapacity() + (venue.getTotalCapacity() - currentSectionsCapacity))
+                );
+            }
         }
 
         if (sectionDTO.getName() != null) {
@@ -275,7 +370,10 @@ public class VenueServiceImpl implements VenueService {
 
         VenueSection updatedSection = venueSectionRepository.save(section);
 
-        updateVenueTotalCapacity(venueId);
+        // Solo actualizar capacidad total si el venue no tiene capacidad especificada
+        if (venue.getTotalCapacity() == null) {
+            updateVenueTotalCapacity(venueId);
+        }
 
         return mapSectionToDTO(updatedSection);
     }
@@ -283,7 +381,7 @@ public class VenueServiceImpl implements VenueService {
     @Override
     @Transactional
     public void deleteVenueSection(Long venueId, Long sectionId) {
-        findVenueById(venueId); // Verificar que el recinto existe
+        Venue venue = findVenueById(venueId); // Verificar que el recinto existe
 
         VenueSection section = venueSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new RecitappException("Sección no encontrada con ID: " + sectionId));
@@ -299,8 +397,10 @@ public class VenueServiceImpl implements VenueService {
 
         venueSectionRepository.deleteById(sectionId);
 
-        // Actualizar la capacidad total del recinto
-        updateVenueTotalCapacity(venueId);
+        // Solo actualizar la capacidad total si el venue no tiene capacidad especificada
+        if (venue.getTotalCapacity() == null) {
+            updateVenueTotalCapacity(venueId);
+        }
     }
 
     @Override
@@ -418,6 +518,13 @@ public class VenueServiceImpl implements VenueService {
     }
 
     private VenueDTO mapToDTO(Venue entity) {
+        List<VenueSectionDTO> sections = null;
+        if (entity.getSections() != null) {
+            sections = entity.getSections().stream()
+                    .map(this::mapSectionToDTO)
+                    .collect(Collectors.toList());
+        }
+        
         return VenueDTO.builder()
                 .id(entity.getId())
                 .name(entity.getName())
@@ -433,6 +540,7 @@ public class VenueServiceImpl implements VenueService {
                 .updatedAt(entity.getUpdatedAt())
                 .latitude(entity.getLatitude())
                 .longitude(entity.getLongitude())
+                .sections(sections)
                 .build();
     }
 
