@@ -3,8 +3,7 @@ package com.recitapp.recitapp_api.modules.payment.controller;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/payments")
-@CrossOrigin(origins = "*", maxAge = 3600)
+@RequestMapping("/payments")
 public class PaymentTestController {
 
     @GetMapping("/test")

@@ -1,7 +1,6 @@
 package com.recitapp.recitapp_api.config;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
@@ -14,17 +13,6 @@ public class WebConfig implements WebMvcConfigurer {
     @PostConstruct
     public void init() {
         System.out.println("🌐 WebConfig initialized - Configuring MVC settings");
-    }
-
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        System.out.println("🔗 Configuring CORS for API endpoints");
-        registry.addMapping("/api/**")
-                .allowedOrigins("http://localhost:4200", "http://localhost:3000")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-                .allowedHeaders("*")
-                .allowCredentials(true)
-                .maxAge(3600);
     }
 
     @Override
