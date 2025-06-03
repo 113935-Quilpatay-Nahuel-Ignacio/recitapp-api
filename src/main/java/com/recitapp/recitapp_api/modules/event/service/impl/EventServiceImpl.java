@@ -8,16 +8,20 @@ import com.recitapp.recitapp_api.modules.event.dto.*;
 import com.recitapp.recitapp_api.modules.event.entity.Event;
 import com.recitapp.recitapp_api.modules.event.entity.EventArtist;
 import com.recitapp.recitapp_api.modules.event.entity.EventStatus;
+import com.recitapp.recitapp_api.modules.event.entity.TicketPrice;
 import com.recitapp.recitapp_api.modules.event.repository.EventArtistRepository;
 import com.recitapp.recitapp_api.modules.event.repository.EventRepository;
 import com.recitapp.recitapp_api.modules.event.repository.EventStatisticsRepository;
 import com.recitapp.recitapp_api.modules.event.repository.EventStatusRepository;
+import com.recitapp.recitapp_api.modules.event.repository.TicketPriceRepository;
 import com.recitapp.recitapp_api.modules.event.service.EventService;
 import com.recitapp.recitapp_api.modules.ticket.repository.TicketRepository;
 import com.recitapp.recitapp_api.modules.user.entity.User;
 import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
 import com.recitapp.recitapp_api.modules.venue.entity.Venue;
+import com.recitapp.recitapp_api.modules.venue.entity.VenueSection;
 import com.recitapp.recitapp_api.modules.venue.repository.VenueRepository;
+import com.recitapp.recitapp_api.modules.venue.repository.VenueSectionRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -40,6 +44,8 @@ public class EventServiceImpl implements EventService {
     private final EventArtistRepository eventArtistRepository;
     private final TicketRepository ticketRepository;
     private final EventStatisticsRepository eventStatisticsRepository;
+    private final TicketPriceRepository ticketPriceRepository;
+    private final VenueSectionRepository venueSectionRepository;
 
     // Actualiza el método createEvent con mejor manejo de excepciones
     @Override
@@ -136,6 +142,41 @@ public class EventServiceImpl implements EventService {
             }
         }
 
+        // Si se proporcionaron precios de tickets, crearlos
+        if (eventDTO.getTicketPrices() != null && !eventDTO.getTicketPrices().isEmpty()) {
+            for (TicketPriceDTO ticketPriceDTO : eventDTO.getTicketPrices()) {
+                // Validar que la sección existe y pertenece al venue del evento
+                VenueSection section = venueSectionRepository.findById(ticketPriceDTO.getSectionId())
+                        .orElseThrow(() -> EntityNotFoundException.create("Sección", ticketPriceDTO.getSectionId()));
+                
+                if (!section.getVenue().getId().equals(venue.getId())) {
+                    throw new RecitappException("La sección con ID " + ticketPriceDTO.getSectionId() + 
+                                               " no pertenece al recinto seleccionado");
+                }
+
+                // Validar que la cantidad disponible no exceda la capacidad de la sección
+                if (ticketPriceDTO.getAvailableQuantity() > section.getCapacity()) {
+                    throw new RecitappException("La cantidad disponible (" + ticketPriceDTO.getAvailableQuantity() + 
+                                               ") no puede exceder la capacidad de la sección '" + section.getName() + 
+                                               "' (" + section.getCapacity() + ")");
+                }
+
+                TicketPrice ticketPrice = new TicketPrice();
+                ticketPrice.setEvent(savedEvent);
+                ticketPrice.setSection(section);
+                ticketPrice.setTicketType(ticketPriceDTO.getTicketType());
+                ticketPrice.setPrice(ticketPriceDTO.getPrice());
+                ticketPrice.setAvailableQuantity(ticketPriceDTO.getAvailableQuantity());
+
+                try {
+                    ticketPriceRepository.save(ticketPrice);
+                } catch (Exception ex) {
+                    throw new RecitappException("Error al crear el precio para la sección '" + section.getName() + 
+                                               "'. Detalles: " + ex.getMessage(), ex);
+                }
+            }
+        }
+
         return mapToDTO(savedEvent);
     }
 
@@ -227,6 +268,45 @@ public class EventServiceImpl implements EventService {
             }
         }
 
+        // Actualizar precios de tickets si se proporcionaron
+        if (eventDTO.getTicketPrices() != null) {
+            // Eliminar precios existentes
+            ticketPriceRepository.deleteByEventId(eventId);
+
+            // Crear nuevos precios
+            for (TicketPriceDTO ticketPriceDTO : eventDTO.getTicketPrices()) {
+                // Validar que la sección existe y pertenece al venue del evento
+                VenueSection section = venueSectionRepository.findById(ticketPriceDTO.getSectionId())
+                        .orElseThrow(() -> EntityNotFoundException.create("Sección", ticketPriceDTO.getSectionId()));
+                
+                if (!section.getVenue().getId().equals(updatedEvent.getVenue().getId())) {
+                    throw new RecitappException("La sección con ID " + ticketPriceDTO.getSectionId() + 
+                                               " no pertenece al recinto seleccionado");
+                }
+
+                // Validar que la cantidad disponible no exceda la capacidad de la sección
+                if (ticketPriceDTO.getAvailableQuantity() > section.getCapacity()) {
+                    throw new RecitappException("La cantidad disponible (" + ticketPriceDTO.getAvailableQuantity() + 
+                                               ") no puede exceder la capacidad de la sección '" + section.getName() + 
+                                               "' (" + section.getCapacity() + ")");
+                }
+
+                TicketPrice ticketPrice = new TicketPrice();
+                ticketPrice.setEvent(updatedEvent);
+                ticketPrice.setSection(section);
+                ticketPrice.setTicketType(ticketPriceDTO.getTicketType());
+                ticketPrice.setPrice(ticketPriceDTO.getPrice());
+                ticketPrice.setAvailableQuantity(ticketPriceDTO.getAvailableQuantity());
+
+                try {
+                    ticketPriceRepository.save(ticketPrice);
+                } catch (Exception ex) {
+                    throw new RecitappException("Error al actualizar el precio para la sección '" + section.getName() + 
+                                               "'. Detalles: " + ex.getMessage(), ex);
+                }
+            }
+        }
+
         return mapToDTO(updatedEvent);
     }
 
@@ -251,6 +331,9 @@ public class EventServiceImpl implements EventService {
         try {
             // Eliminar las asociaciones con artistas
             eventArtistRepository.deleteByEventId(eventId);
+
+            // Eliminar precios de tickets
+            ticketPriceRepository.deleteByEventId(eventId);
 
             // Eliminar el evento
             eventRepository.delete(event);
@@ -582,6 +665,14 @@ public class EventServiceImpl implements EventService {
 
         dto.setArtistIds(artistIds);
 
+        // Obtener precios de tickets del evento
+        List<TicketPrice> ticketPrices = ticketPriceRepository.findByEventId(event.getId());
+        List<TicketPriceDTO> ticketPriceDTOs = ticketPrices.stream()
+                .map(this::mapTicketPriceToDTO)
+                .collect(Collectors.toList());
+        
+        dto.setTicketPrices(ticketPriceDTOs);
+
         // Agregar IDs de moderador y registrador si están disponibles
         if (event.getModerator() != null) {
             dto.setModeratorId(event.getModerator().getId());
@@ -592,6 +683,18 @@ public class EventServiceImpl implements EventService {
         }
 
         return dto;
+    }
+
+    private TicketPriceDTO mapTicketPriceToDTO(TicketPrice ticketPrice) {
+        return TicketPriceDTO.builder()
+                .id(ticketPrice.getId())
+                .sectionId(ticketPrice.getSection().getId())
+                .sectionName(ticketPrice.getSection().getName())
+                .ticketType(ticketPrice.getTicketType())
+                .price(ticketPrice.getPrice())
+                .availableQuantity(ticketPrice.getAvailableQuantity())
+                .eventId(ticketPrice.getEvent().getId())
+                .build();
     }
 
     private void validateStatusTransition(String currentStatus, String newStatus) {

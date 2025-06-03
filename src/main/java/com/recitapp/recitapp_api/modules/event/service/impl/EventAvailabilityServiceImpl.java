@@ -2,7 +2,9 @@ package com.recitapp.recitapp_api.modules.event.service.impl;
 
 import com.recitapp.recitapp_api.common.exception.EntityNotFoundException;
 import com.recitapp.recitapp_api.modules.event.entity.Event;
+import com.recitapp.recitapp_api.modules.event.entity.TicketPrice;
 import com.recitapp.recitapp_api.modules.event.repository.EventRepository;
+import com.recitapp.recitapp_api.modules.event.repository.TicketPriceRepository;
 import com.recitapp.recitapp_api.modules.event.service.EventAvailabilityService;
 import com.recitapp.recitapp_api.modules.ticket.repository.TicketRepository;
 import com.recitapp.recitapp_api.modules.venue.dto.SectionAvailabilityDTO;
@@ -22,6 +24,7 @@ public class EventAvailabilityServiceImpl implements EventAvailabilityService {
     private final EventRepository eventRepository;
     private final VenueSectionRepository venueSectionRepository;
     private final TicketRepository ticketRepository;
+    private final TicketPriceRepository ticketPriceRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -30,12 +33,13 @@ public class EventAvailabilityServiceImpl implements EventAvailabilityService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EntityNotFoundException("Event not found with ID: " + eventId));
 
-        // Get all sections for the venue
+        // Get all sections for the venue that have ticket prices for this event
         List<VenueSection> sections = venueSectionRepository.findByVenueId(event.getVenue().getId());
 
-        // Calculate availability for each section
+        // Calculate availability for each section that has prices defined for this event
         return sections.stream()
                 .map(section -> calculateSectionAvailability(event.getId(), section))
+                .filter(sectionAvailability -> sectionAvailability.getTicketPrices() != null && !sectionAvailability.getTicketPrices().isEmpty())
                 .collect(Collectors.toList());
     }
 
@@ -68,13 +72,32 @@ public class EventAvailabilityServiceImpl implements EventAvailabilityService {
         Long soldTickets = ticketRepository.countByEventIdAndSectionIdAndStatusName(
                 eventId, section.getId(), "VENDIDA");
 
-        // Calculate available tickets
-        Long availableTickets = totalCapacity - soldTickets;
+        // Get ticket prices for this event and section
+        List<TicketPrice> ticketPrices = ticketPriceRepository.findByEventIdAndSectionId(eventId, section.getId());
+        
+        // Calculate available tickets based on ticket prices (not just section capacity)
+        Long availableTickets = ticketPrices.stream()
+                .mapToLong(tp -> tp.getAvailableQuantity())
+                .sum() - soldTickets;
 
-        // Calculate availability percentage
-        Double availabilityPercentage = totalCapacity > 0
-                ? (availableTickets.doubleValue() / totalCapacity.doubleValue()) * 100
+        // Calculate availability percentage based on total available tickets from prices
+        Long totalAvailableFromPrices = ticketPrices.stream()
+                .mapToLong(tp -> tp.getAvailableQuantity())
+                .sum();
+        
+        Double availabilityPercentage = totalAvailableFromPrices > 0
+                ? (availableTickets.doubleValue() / totalAvailableFromPrices.doubleValue()) * 100
                 : 0.0;
+
+        // Convert ticket prices to DTO format
+        List<SectionAvailabilityDTO.TicketPriceInfo> ticketPriceInfos = ticketPrices.stream()
+                .map(tp -> SectionAvailabilityDTO.TicketPriceInfo.builder()
+                        .ticketPriceId(tp.getId())
+                        .ticketType(tp.getTicketType())
+                        .price(tp.getPrice())
+                        .availableQuantity(tp.getAvailableQuantity())
+                        .build())
+                .collect(Collectors.toList());
 
         return SectionAvailabilityDTO.builder()
                 .sectionId(section.getId())
@@ -82,8 +105,8 @@ public class EventAvailabilityServiceImpl implements EventAvailabilityService {
                 .totalCapacity(totalCapacity)
                 .availableTickets(availableTickets)
                 .soldTickets(soldTickets)
-                .basePrice(section.getBasePrice())
                 .availabilityPercentage(availabilityPercentage)
+                .ticketPrices(ticketPriceInfos)
                 .build();
     }
 }

@@ -5,8 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-
 @Entity
 @Table(name = "venue_sections")
 @Data
@@ -30,9 +28,6 @@ public class VenueSection {
 
     @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Column(name = "base_price", precision = 10, scale = 2)
-    private BigDecimal basePrice;
 
     @Column(nullable = false)
     private Boolean active;

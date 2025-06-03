@@ -4,8 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @Builder
@@ -17,6 +17,19 @@ public class SectionAvailabilityDTO {
     private Integer totalCapacity;
     private Long availableTickets;
     private Long soldTickets;
-    private BigDecimal basePrice;
     private Double availabilityPercentage;
+    
+    // Información de precios para este evento específico
+    private List<TicketPriceInfo> ticketPrices;
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TicketPriceInfo {
+        private Long ticketPriceId;
+        private String ticketType;
+        private BigDecimal price;
+        private Integer availableQuantity;
+    }
 }

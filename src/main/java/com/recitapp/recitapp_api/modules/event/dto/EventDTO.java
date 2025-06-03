@@ -51,4 +51,7 @@ public class EventDTO {
     private Boolean verified;
     private Long moderatorId;
     private Long registrarId;
+    
+    // Nuevo campo para manejar precios de secciones
+    private List<TicketPriceDTO> ticketPrices;
 }

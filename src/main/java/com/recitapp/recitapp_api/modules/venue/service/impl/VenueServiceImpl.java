@@ -289,7 +289,6 @@ public class VenueServiceImpl implements VenueService {
         section.setName(sectionDTO.getName());
         section.setCapacity(sectionDTO.getCapacity());
         section.setDescription(sectionDTO.getDescription());
-        section.setBasePrice(sectionDTO.getBasePrice());
         section.setActive(true);
 
         VenueSection savedSection = venueSectionRepository.save(section);
@@ -314,7 +313,6 @@ public class VenueServiceImpl implements VenueService {
         section.setName(sectionDTO.getName());
         section.setCapacity(sectionDTO.getCapacity());
         section.setDescription(sectionDTO.getDescription());
-        section.setBasePrice(sectionDTO.getBasePrice());
         section.setActive(true);
 
         VenueSection savedSection = venueSectionRepository.save(section);
@@ -360,9 +358,6 @@ public class VenueServiceImpl implements VenueService {
         }
         if (sectionDTO.getDescription() != null) {
             section.setDescription(sectionDTO.getDescription());
-        }
-        if (sectionDTO.getBasePrice() != null) {
-            section.setBasePrice(sectionDTO.getBasePrice());
         }
         if (sectionDTO.getActive() != null) {
             section.setActive(sectionDTO.getActive());
@@ -550,7 +545,6 @@ public class VenueServiceImpl implements VenueService {
                 .name(section.getName())
                 .capacity(section.getCapacity())
                 .description(section.getDescription())
-                .basePrice(section.getBasePrice())
                 .active(section.getActive())
                 .venueId(section.getVenue().getId())
                 .build();
