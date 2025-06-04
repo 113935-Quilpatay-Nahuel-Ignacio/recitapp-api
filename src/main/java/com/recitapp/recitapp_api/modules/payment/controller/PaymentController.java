@@ -32,6 +32,7 @@ public class PaymentController {
         System.out.println("📍 Controller path: /api/payments");
         System.out.println("🔗 Available endpoints:");
         System.out.println("  - POST /api/payments/create-preference");
+        System.out.println("  - POST /api/payments/process-payment");
         System.out.println("  - POST /api/payments/webhook");
         System.out.println("  - GET /api/payments/status/{paymentId}");
         System.out.println("  - GET /api/payments/public-key");
@@ -105,6 +106,26 @@ public class PaymentController {
         } catch (Exception e) {
             log.error("Error getting public key: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR");
+        }
+    }
+
+    @PostMapping("/process-payment")
+    public ResponseEntity<PaymentResponseDTO> processPayment(
+            @Valid @RequestBody PaymentRequestDTO paymentRequest) 
+    {
+        try {
+            log.info("Processing confirmed payment for event: {} and user: {}", 
+                    paymentRequest.getEventId(), paymentRequest.getUserId());
+            
+            PaymentResponseDTO response = mercadoPagoService.processConfirmedPayment(paymentRequest);
+            
+            log.info("Payment processed successfully and tickets created");
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Error processing payment: {}", e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 } 

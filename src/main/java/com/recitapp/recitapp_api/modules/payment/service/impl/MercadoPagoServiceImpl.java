@@ -1,18 +1,29 @@
 package com.recitapp.recitapp_api.modules.payment.service.impl;
 
+import com.mercadopago.MercadoPagoConfig;
 import com.mercadopago.client.payment.PaymentClient;
 import com.mercadopago.client.preference.PreferenceBackUrlsRequest;
 import com.mercadopago.client.preference.PreferenceClient;
 import com.mercadopago.client.preference.PreferenceItemRequest;
 import com.mercadopago.client.preference.PreferencePayerRequest;
 import com.mercadopago.client.preference.PreferenceRequest;
-import com.mercadopago.exceptions.MPApiException;
-import com.mercadopago.exceptions.MPException;
-import com.mercadopago.resources.payment.Payment;
 import com.mercadopago.resources.preference.Preference;
+import com.mercadopago.resources.payment.Payment;
+import com.mercadopago.exceptions.MPException;
+import com.mercadopago.exceptions.MPApiException;
 import com.recitapp.recitapp_api.modules.payment.dto.PaymentRequestDTO;
 import com.recitapp.recitapp_api.modules.payment.dto.PaymentResponseDTO;
 import com.recitapp.recitapp_api.modules.payment.service.MercadoPagoService;
+import com.recitapp.recitapp_api.modules.transaction.dto.TransactionDTO;
+import com.recitapp.recitapp_api.modules.transaction.dto.TransactionDetailDTO;
+import com.recitapp.recitapp_api.modules.transaction.service.TransactionService;
+import com.recitapp.recitapp_api.modules.ticket.dto.TicketDTO;
+import com.recitapp.recitapp_api.modules.ticket.dto.TicketPurchaseRequestDTO;
+import com.recitapp.recitapp_api.modules.ticket.dto.TicketPurchaseResponseDTO;
+import com.recitapp.recitapp_api.modules.ticket.service.TicketService;
+import com.recitapp.recitapp_api.modules.ticket.service.TicketPdfService;
+import com.recitapp.recitapp_api.modules.ticket.service.TicketEmailService;
+import com.recitapp.recitapp_api.modules.transaction.dto.PaymentMethodDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +56,11 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
 
     @Value("${mercadopago.webhook.url}")
     private String webhookUrl;
+
+    private final TransactionService transactionService;
+    private final TicketService ticketService;
+    private final TicketPdfService ticketPdfService;
+    private final TicketEmailService ticketEmailService;
 
     @Override
     public PaymentResponseDTO createPaymentPreference(PaymentRequestDTO paymentRequest) {
@@ -325,5 +343,137 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
         // Implementar lógica para obtener el nombre del evento
         // Por ahora retornar un placeholder
         return "Evento ID: " + eventId;
+    }
+
+    @Override
+    public PaymentResponseDTO processConfirmedPayment(PaymentRequestDTO paymentRequest) {
+        try {
+            log.info("Processing confirmed payment for Event ID: {}, User ID: {}", 
+                    paymentRequest.getEventId(), paymentRequest.getUserId());
+            
+            // 1. Use the TicketService to purchase tickets (this creates both tickets and transaction)
+            TicketPurchaseRequestDTO ticketPurchaseRequest = buildTicketPurchaseRequest(paymentRequest);
+            TicketPurchaseResponseDTO purchaseResponse = ticketService.purchaseTickets(ticketPurchaseRequest);
+            
+            // 2. Generar PDFs y enviar emails para cada ticket
+            for (TicketDTO ticket : purchaseResponse.getTickets()) {
+                generateTicketPDF(ticket);
+                sendTicketByEmail(ticket, paymentRequest.getPayer().getEmail());
+            }
+            
+            // 3. Construir respuesta
+            PaymentResponseDTO.BricksConfiguration bricksConfig = PaymentResponseDTO.BricksConfiguration.builder()
+                .locale("es-AR")
+                .theme("default")
+                .paymentMethods(PaymentResponseDTO.PaymentMethods.builder()
+                    .creditCard(true)
+                    .debitCard(true)
+                    .mercadoPagoWallet(true)
+                    .cash(true)
+                    .bankTransfer(true)
+                    .build())
+                .build();
+            
+            return PaymentResponseDTO.builder()
+                .preferenceId("COMPLETED_" + purchaseResponse.getTransactionId())
+                .initPoint(null)
+                .sandboxInitPoint(null)
+                .publicKey(publicKey)
+                .totalAmount(paymentRequest.getTotalAmount())
+                .status("COMPLETED")
+                .qrCodeData(purchaseResponse.getTickets().get(0).getQrCode()) // QR del primer ticket
+                .paymentMethodInfo(PaymentResponseDTO.PaymentMethodInfo.builder()
+                    .paymentMethodId("mercadopago")
+                    .paymentTypeId("digital_wallet")
+                    .paymentMethodName("MercadoPago")
+                    .issuerName(null)
+                    .build())
+                .bricksConfig(bricksConfig)
+                .build();
+            
+        } catch (Exception e) {
+            log.error("Error processing confirmed payment: {}", e.getMessage(), e);
+            throw new RuntimeException("Error processing payment", e);
+        }
+    }
+    
+    private TicketPurchaseRequestDTO buildTicketPurchaseRequest(PaymentRequestDTO paymentRequest) {
+        log.info("Building ticket purchase request from payment request");
+        
+        // Get MercadoPago payment method ID dynamically
+        Long mercadoPagoPaymentMethodId = getMercadoPagoPaymentMethodId();
+        
+        List<TicketPurchaseRequestDTO.TicketRequestDTO> ticketRequests = new ArrayList<>();
+        
+        for (PaymentRequestDTO.TicketItemDTO ticketItem : paymentRequest.getTickets()) {
+            // Crear una entrada por cada cantidad solicitada
+            for (int i = 0; i < ticketItem.getQuantity(); i++) {
+                TicketPurchaseRequestDTO.TicketRequestDTO ticketRequest = new TicketPurchaseRequestDTO.TicketRequestDTO();
+                ticketRequest.setSectionId(ticketItem.getSectionId());
+                ticketRequest.setAttendeeFirstName(ticketItem.getAttendeeFirstName());
+                ticketRequest.setAttendeeLastName(ticketItem.getAttendeeLastName());
+                ticketRequest.setAttendeeDni(ticketItem.getAttendeeDni());
+                ticketRequest.setPrice(ticketItem.getPrice());
+                // ticketRequest.setPromotionId(null); // No promotions for now
+                
+                ticketRequests.add(ticketRequest);
+            }
+        }
+        
+        return TicketPurchaseRequestDTO.builder()
+            .eventId(paymentRequest.getEventId())
+            .paymentMethodId(mercadoPagoPaymentMethodId)
+            .userId(paymentRequest.getUserId())
+            .tickets(ticketRequests)
+            .build();
+    }
+    
+    private Long getMercadoPagoPaymentMethodId() {
+        try {
+            // Get all active payment methods and find MercadoPago
+            var paymentMethods = transactionService.getActivePaymentMethods();
+            return paymentMethods.stream()
+                .filter(pm -> "MERCADOPAGO".equalsIgnoreCase(pm.getName()))
+                .findFirst()
+                .map(pm -> pm.getId())
+                .orElseThrow(() -> new RuntimeException("MercadoPago payment method not found"));
+        } catch (Exception e) {
+            log.error("Error getting MercadoPago payment method ID: {}", e.getMessage());
+            // Fallback to a reasonable default (this should be updated based on your actual DB)
+            log.warn("Using fallback payment method ID. Please check your payment_methods table.");
+            return 1L; // Fallback - adjust this based on your actual database
+        }
+    }
+    
+    private void generateTicketPDF(TicketDTO ticket) {
+        log.info("Generating PDF for ticket: {}", ticket.getQrCode());
+        try {
+            // Generar PDF usando el servicio
+            byte[] pdfBytes = ticketPdfService.generateTicketPdf(ticket);
+            
+            // Guardar PDF en el sistema de archivos
+            String filePath = ticketPdfService.saveTicketPdf(ticket);
+            
+            log.info("PDF generated and saved successfully for ticket: {} at path: {}", ticket.getQrCode(), filePath);
+        } catch (Exception e) {
+            log.error("Error generating PDF for ticket: {}", e.getMessage(), e);
+            // No lanzar excepción para no interrumpir el flujo de pago
+        }
+    }
+    
+    private void sendTicketByEmail(TicketDTO ticket, String email) {
+        log.info("Sending ticket by email to: {}", email);
+        try {
+            // Generar PDF para adjuntar al email
+            byte[] pdfBytes = ticketPdfService.generateTicketPdf(ticket);
+            
+            // Enviar email con PDF adjunto
+            ticketEmailService.sendTicketWithAttachment(ticket, email, pdfBytes);
+            
+            log.info("Email sent successfully for ticket: {} to {}", ticket.getQrCode(), email);
+        } catch (Exception e) {
+            log.error("Error sending email for ticket: {}", e.getMessage(), e);
+            // No lanzar excepción para no interrumpir el flujo de pago
+        }
     }
 } 
