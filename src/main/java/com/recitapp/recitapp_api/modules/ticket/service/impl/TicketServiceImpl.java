@@ -332,11 +332,10 @@ public class TicketServiceImpl implements TicketService {
                                 ", apellido: " + recipientLastName +
                                 ", y DNI: " + recipientDni));
 
-        // Actualizar ticket con el nuevo usuario y usando los datos del usuario como asistente
+        // Actualizar SOLO el propietario del ticket, manteniendo los datos originales del asistente
         ticket.setUser(recipientUser);
-        ticket.setAssignedUserFirstName(recipientUser.getFirstName());
-        ticket.setAssignedUserLastName(recipientUser.getLastName());
-        ticket.setAssignedUserDni(recipientUser.getDni());
+        // NO cambiar assigned_user_first_name, assigned_user_last_name, assigned_user_dni
+        // para mantener los datos del asistente original
         ticket.setUpdatedAt(LocalDateTime.now());
 
         // Generar nuevo código QR
