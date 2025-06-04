@@ -102,7 +102,19 @@ public class TicketPdfServiceImpl implements TicketPdfService {
             // Generar y agregar código QR
             if (ticket.getQrCode() != null) {
                 try {
-                    byte[] qrCodeImage = generateQRCodeImage(ticket.getQrCode(), 200, 200);
+                    String qrData = ticket.getQrCode();
+                    
+                    // Si el QR code ya contiene "data:image/png;base64," extraer solo el texto relevante
+                    if (qrData.startsWith("data:image/png;base64,")) {
+                        // Para efectos del QR, usar el identification code o datos más simples
+                        qrData = "TICKET:" + (ticket.getId() != null ? ticket.getId() : "") + 
+                                "|EVENT:" + (ticket.getEventId() != null ? ticket.getEventId() : "") +
+                                "|CODE:" + (ticket.getQrCode().contains("TKT-") ? 
+                                          ticket.getQrCode().substring(ticket.getQrCode().indexOf("TKT-")) : 
+                                          ticket.getQrCode());
+                    }
+                    
+                    byte[] qrCodeImage = generateQRCodeImage(qrData, 200, 200);
                     Image qrImage = new Image(ImageDataFactory.create(qrCodeImage));
                     qrImage.setTextAlignment(TextAlignment.CENTER);
                     qrImage.setHorizontalAlignment(HorizontalAlignment.CENTER);
@@ -113,6 +125,19 @@ public class TicketPdfServiceImpl implements TicketPdfService {
                         .setTextAlignment(TextAlignment.CENTER);
                     document.add(qrTitle);
                     document.add(qrImage);
+                    
+                    // Agregar texto del código de identificación
+                    if (qrData.contains("TKT-")) {
+                        String identificationCode = qrData.substring(qrData.indexOf("TKT-"));
+                        if (identificationCode.contains("|")) {
+                            identificationCode = identificationCode.substring(0, identificationCode.indexOf("|"));
+                        }
+                        Paragraph codeText = new Paragraph("Código de identificación: " + identificationCode)
+                            .setFontSize(10)
+                            .setTextAlignment(TextAlignment.CENTER);
+                        document.add(codeText);
+                    }
+                    
                 } catch (Exception e) {
                     log.error("Error generating QR code for ticket: {}", e.getMessage());
                     Paragraph qrError = new Paragraph("Error generando código QR")

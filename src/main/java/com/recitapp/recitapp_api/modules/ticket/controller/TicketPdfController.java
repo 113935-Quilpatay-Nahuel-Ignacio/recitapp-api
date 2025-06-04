@@ -3,6 +3,7 @@ package com.recitapp.recitapp_api.modules.ticket.controller;
 import com.recitapp.recitapp_api.modules.ticket.dto.TicketDTO;
 import com.recitapp.recitapp_api.modules.ticket.service.TicketService;
 import com.recitapp.recitapp_api.modules.ticket.service.TicketPdfService;
+import com.recitapp.recitapp_api.modules.ticket.service.TicketEmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -19,6 +20,7 @@ public class TicketPdfController {
 
     private final TicketService ticketService;
     private final TicketPdfService ticketPdfService;
+    private final TicketEmailService ticketEmailService;
 
     @GetMapping("/{ticketId}/download-pdf")
     public ResponseEntity<byte[]> downloadTicketPdf(@PathVariable Long ticketId) {
@@ -62,7 +64,7 @@ public class TicketPdfController {
             
             // Generar PDF y enviar email
             byte[] pdfBytes = ticketPdfService.generateTicketPdf(ticket);
-            // Note: You'll need to inject TicketEmailService here too
+            ticketEmailService.sendTicketWithAttachment(ticket, email, pdfBytes);
             
             log.info("Email resent successfully for ticket ID: {}", ticketId);
             return ResponseEntity.ok("Email enviado exitosamente");

@@ -183,15 +183,23 @@
 		<!-- iText for PDF generation -->
 		<dependency>
 			<groupId>com.itextpdf</groupId>
-			<artifactId>itext7-core</artifactId>
-			<version>7.2.5</version>
+			<artifactId>itext-core</artifactId>
+			<version>8.0.2</version>
+			<type>pom</type>
 		</dependency>
 		
-		<!-- QR Code generation for PDFs -->
+		<!-- iText Layout for document creation -->
 		<dependency>
 			<groupId>com.itextpdf</groupId>
-			<artifactId>itext7-html2pdf</artifactId>
-			<version>4.0.5</version>
+			<artifactId>layout</artifactId>
+			<version>8.0.2</version>
+		</dependency>
+		
+		<!-- iText Kernel -->
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>kernel</artifactId>
+			<version>8.0.2</version>
 		</dependency>
 	</dependencies>
 	<dependencyManagement>
