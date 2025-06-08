@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Security - Configuration files with credentials ###
+src/main/resources/application.properties
+src/main/resources/application-notifications.properties
+src/main/resources/firebase/*.json
+*.properties
+!application-template.properties

@@ -12,6 +12,11 @@ import com.recitapp.recitapp_api.modules.notification.dto.*;
 import com.recitapp.recitapp_api.modules.notification.entity.*;
 import com.recitapp.recitapp_api.modules.notification.repository.*;
 import com.recitapp.recitapp_api.modules.notification.service.NotificationService;
+import com.recitapp.recitapp_api.modules.notification.entity.UserDeviceToken;
+import com.recitapp.recitapp_api.modules.notification.service.EmailService;
+import com.recitapp.recitapp_api.modules.notification.service.PushNotificationService;
+import com.recitapp.recitapp_api.modules.notification.service.SmsService;
+import com.recitapp.recitapp_api.modules.notification.service.WhatsAppService;
 import com.recitapp.recitapp_api.modules.ticket.entity.Ticket;
 import com.recitapp.recitapp_api.modules.ticket.repository.TicketRepository;
 import com.recitapp.recitapp_api.modules.user.entity.User;
@@ -26,7 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -47,6 +54,15 @@ public class NotificationServiceImpl implements NotificationService {
     private final VenueFollowerRepository venueFollowerRepository;
     private final TicketRepository ticketRepository;
     private final MusicGenreRepository musicGenreRepository;
+    
+    // Notification delivery services
+    private final EmailService emailService;
+    private final PushNotificationService pushNotificationService;
+    private final SmsService smsService;
+    private final WhatsAppService whatsAppService;
+    
+    // Additional repositories for enhanced functionality
+    private final UserDeviceTokenRepository deviceTokenRepository;
 
     // RAPP113935-114: Register notification preferences
     @Override
@@ -581,7 +597,298 @@ public class NotificationServiceImpl implements NotificationService {
             notification.setRelatedVenue(venue);
         }
 
-        return historyRepository.save(notification);
+        // Guardar en historial primero
+        NotificationHistory savedNotification = historyRepository.save(notification);
+        
+        // Enviar la notificación según el canal
+        try {
+            sendNotificationByChannel(user, channel, type, content, eventId, artistId, venueId);
+        } catch (Exception e) {
+            log.error("Failed to send notification via {}: {}", channel.getName(), e.getMessage());
+            // No lanzamos excepción para no afectar el flujo principal
+        }
+
+        return savedNotification;
+    }
+
+    private void sendNotificationByChannel(User user, NotificationChannel channel, NotificationType type, 
+                                         String content, Long eventId, Long artistId, Long venueId) {
+        String channelName = channel.getName().toUpperCase();
+        
+        switch (channelName) {
+            case "EMAIL":
+                sendEmailNotification(user, type, content, eventId, artistId, venueId);
+                break;
+            case "PUSH":
+                sendPushNotification(user, type, content, eventId, artistId, venueId);
+                break;
+            case "SMS":
+                sendSmsNotification(user, type, content, eventId, artistId, venueId);
+                break;
+            case "WHATSAPP":
+                sendWhatsAppNotification(user, type, content, eventId, artistId, venueId);
+                break;
+            default:
+                log.warn("Unknown notification channel: {}", channelName);
+        }
+    }
+
+    private void sendEmailNotification(User user, NotificationType type, String content, 
+                                     Long eventId, Long artistId, Long venueId) {
+        try {
+            String subject = generateEmailSubject(type, eventId, artistId, venueId);
+            
+            // Si hay plantilla HTML disponible, usar template email
+            if (type.getTemplate() != null && !type.getTemplate().isEmpty()) {
+                Map<String, Object> variables = buildTemplateVariables(user, eventId, artistId, venueId);
+                emailService.sendTemplateEmail(user.getEmail(), subject, type.getTemplate(), variables);
+            } else {
+                // Enviar email simple
+                emailService.sendSimpleEmail(user.getEmail(), subject, content);
+            }
+            
+            log.info("Email notification sent to user: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send email notification to {}: {}", user.getEmail(), e.getMessage());
+        }
+    }
+
+    private void sendPushNotification(User user, NotificationType type, String content, 
+                                    Long eventId, Long artistId, Long venueId) {
+        try {
+            // Obtener el device token del usuario (esto requeriría una tabla adicional)
+            String deviceToken = getUserDeviceToken(user.getId());
+            if (deviceToken == null || deviceToken.isEmpty()) {
+                log.warn("No device token found for user: {}", user.getId());
+                return;
+            }
+
+            String title = generatePushTitle(type, eventId, artistId, venueId);
+            Map<String, String> data = buildPushData(eventId, artistId, venueId, type.getName());
+            
+            pushNotificationService.sendToDevice(deviceToken, title, content, data);
+            log.info("Push notification sent to user: {}", user.getId());
+        } catch (Exception e) {
+            log.error("Failed to send push notification to user {}: {}", user.getId(), e.getMessage());
+        }
+    }
+
+    private void sendSmsNotification(User user, NotificationType type, String content, 
+                                   Long eventId, Long artistId, Long venueId) {
+        try {
+            String phoneNumber = getUserPhoneNumber(user.getId());
+            if (phoneNumber == null || phoneNumber.isEmpty()) {
+                log.warn("No phone number found for user: {}", user.getId());
+                return;
+            }
+
+            // Usar plantilla SMS si está disponible
+            if (type.getTemplate() != null && !type.getTemplate().isEmpty()) {
+                String[] parameters = buildSmsParameters(eventId, artistId, venueId);
+                smsService.sendTemplateSms(phoneNumber, type.getTemplate(), parameters);
+            } else {
+                smsService.sendSms(phoneNumber, content);
+            }
+            
+            log.info("SMS notification sent to user: {}", user.getId());
+        } catch (Exception e) {
+            log.error("Failed to send SMS notification to user {}: {}", user.getId(), e.getMessage());
+        }
+    }
+
+    private void sendWhatsAppNotification(User user, NotificationType type, String content, 
+                                        Long eventId, Long artistId, Long venueId) {
+        try {
+            String phoneNumber = getUserPhoneNumber(user.getId());
+            if (phoneNumber == null || phoneNumber.isEmpty()) {
+                log.warn("No phone number found for user: {}", user.getId());
+                return;
+            }
+
+            // Usar plantilla WhatsApp si está disponible
+            if (type.getTemplate() != null && !type.getTemplate().isEmpty()) {
+                Map<String, String> parameters = buildWhatsAppParameters(eventId, artistId, venueId);
+                whatsAppService.sendTemplateMessage(phoneNumber, type.getTemplate(), parameters);
+            } else {
+                whatsAppService.sendWhatsAppMessage(phoneNumber, content);
+            }
+            
+            log.info("WhatsApp notification sent to user: {}", user.getId());
+        } catch (Exception e) {
+            log.error("Failed to send WhatsApp notification to user {}: {}", user.getId(), e.getMessage());
+        }
+    }
+
+    private String generateEmailSubject(NotificationType type, Long eventId, Long artistId, Long venueId) {
+        String typeName = type.getName();
+        
+        switch (typeName) {
+            case "NUEVO_EVENTO":
+                return "🎵 ¡Nuevo evento disponible en RecitApp!";
+            case "POCAS_ENTRADAS":
+                return "⚠️ ¡Pocas entradas disponibles!";
+            case "CANCELACION":
+                return "❌ Evento cancelado - Información importante";
+            case "MODIFICACION":
+                return "📝 Cambios en tu evento";
+            case "RECORDATORIO":
+                return "🔔 Recordatorio de evento";
+            case "RECOMENDACION":
+                return "🎯 Eventos recomendados para ti";
+            default:
+                return "Notificación de RecitApp";
+        }
+    }
+
+    private String generatePushTitle(NotificationType type, Long eventId, Long artistId, Long venueId) {
+        String typeName = type.getName();
+        
+        switch (typeName) {
+            case "NUEVO_EVENTO":
+                return "¡Nuevo evento!";
+            case "POCAS_ENTRADAS":
+                return "¡Pocas entradas!";
+            case "CANCELACION":
+                return "Evento cancelado";
+            case "MODIFICACION":
+                return "Evento modificado";
+            case "RECORDATORIO":
+                return "Recordatorio";
+            case "RECOMENDACION":
+                return "Recomendaciones";
+            default:
+                return "RecitApp";
+        }
+    }
+
+    private Map<String, Object> buildTemplateVariables(User user, Long eventId, Long artistId, Long venueId) {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("userName", user.getFirstName());
+        variables.put("userEmail", user.getEmail());
+        
+        if (eventId != null) {
+            Event event = eventRepository.findById(eventId).orElse(null);
+            if (event != null) {
+                variables.put("eventName", event.getName());
+                variables.put("eventDate", event.getStartDateTime());
+                variables.put("venueName", event.getVenue().getName());
+            }
+        }
+        
+        if (artistId != null) {
+            Artist artist = artistRepository.findById(artistId).orElse(null);
+            if (artist != null) {
+                variables.put("artistName", artist.getName());
+            }
+        }
+        
+        if (venueId != null) {
+            Venue venue = venueRepository.findById(venueId).orElse(null);
+            if (venue != null) {
+                variables.put("venueName", venue.getName());
+            }
+        }
+        
+        return variables;
+    }
+
+    private Map<String, String> buildPushData(Long eventId, Long artistId, Long venueId, String notificationType) {
+        Map<String, String> data = new HashMap<>();
+        data.put("type", notificationType);
+        
+        if (eventId != null) {
+            data.put("eventId", eventId.toString());
+        }
+        if (artistId != null) {
+            data.put("artistId", artistId.toString());
+        }
+        if (venueId != null) {
+            data.put("venueId", venueId.toString());
+        }
+        
+        return data;
+    }
+
+    private String[] buildSmsParameters(Long eventId, Long artistId, Long venueId) {
+        List<String> parameters = new ArrayList<>();
+        
+        if (eventId != null) {
+            Event event = eventRepository.findById(eventId).orElse(null);
+            if (event != null) {
+                parameters.add(event.getName());
+                parameters.add(event.getVenue().getName());
+            }
+        }
+        
+        if (artistId != null) {
+            Artist artist = artistRepository.findById(artistId).orElse(null);
+            if (artist != null) {
+                parameters.add(artist.getName());
+            }
+        }
+        
+        return parameters.toArray(new String[0]);
+    }
+
+    private Map<String, String> buildWhatsAppParameters(Long eventId, Long artistId, Long venueId) {
+        Map<String, String> parameters = new HashMap<>();
+        
+        if (eventId != null) {
+            Event event = eventRepository.findById(eventId).orElse(null);
+            if (event != null) {
+                parameters.put("eventName", event.getName());
+                parameters.put("eventDate", event.getStartDateTime().toString());
+                parameters.put("venueName", event.getVenue().getName());
+                if (event.getStartDateTime() != null) {
+                    parameters.put("eventTime", event.getStartDateTime().toLocalTime().toString());
+                }
+            }
+        }
+        
+        if (artistId != null) {
+            Artist artist = artistRepository.findById(artistId).orElse(null);
+            if (artist != null) {
+                parameters.put("artistName", artist.getName());
+            }
+        }
+        
+        if (venueId != null) {
+            Venue venue = venueRepository.findById(venueId).orElse(null);
+            if (venue != null) {
+                parameters.put("venueName", venue.getName());
+            }
+        }
+        
+        return parameters;
+    }
+
+    private String getUserDeviceToken(Long userId) {
+        // Buscar el token más reciente del usuario (prioridad Android > iOS > Web)
+        Optional<UserDeviceToken> androidToken = deviceTokenRepository
+            .findLatestTokenByUserAndDeviceType(userId, UserDeviceToken.DeviceType.ANDROID);
+        if (androidToken.isPresent()) {
+            return androidToken.get().getDeviceToken();
+        }
+        
+        Optional<UserDeviceToken> iosToken = deviceTokenRepository
+            .findLatestTokenByUserAndDeviceType(userId, UserDeviceToken.DeviceType.IOS);
+        if (iosToken.isPresent()) {
+            return iosToken.get().getDeviceToken();
+        }
+        
+        Optional<UserDeviceToken> webToken = deviceTokenRepository
+            .findLatestTokenByUserAndDeviceType(userId, UserDeviceToken.DeviceType.WEB);
+        if (webToken.isPresent()) {
+            return webToken.get().getDeviceToken();
+        }
+        
+        return null;
+    }
+
+    private String getUserPhoneNumber(Long userId) {
+        // TODO: Agregar campo phone number a la entidad User
+        // Por ahora retornamos null
+        return null;
     }
 
     private NotificationType getNotificationTypeByName(String name) {

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Nuevo Evento Disponible!</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #e74c3c;
+            margin-bottom: 30px;
+        }
+        .event-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #e74c3c;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 ¡Nuevo Evento Disponible!</h1>
+        </div>
+        
+        <p>Hola <span th:text="${userName}">Usuario</span>,</p>
+        
+        <p>¡Tenemos excelentes noticias! Se ha anunciado un nuevo evento que creemos que te va a encantar:</p>
+        
+        <div class="event-info">
+            <h2 th:text="${eventName}">Nombre del Evento</h2>
+            <p><strong>📍 Lugar:</strong> <span th:text="${venueName}">Venue</span></p>
+            <p><strong>📅 Fecha:</strong> <span th:text="${#temporals.format(eventDate, 'dd/MM/yyyy HH:mm')}">Fecha</span></p>
+        </div>
+        
+        <p>¡No te pierdas esta increíble oportunidad! Las entradas están disponibles ahora.</p>
+        
+        <div style="text-align: center;">
+            <a href="#" class="button">Ver Evento</a>
+        </div>
+        
+        <p>¡Nos vemos en el evento!</p>
+        
+        <div class="footer">
+            <p>Este email fue enviado por RecitApp<br>
+            Si no deseas recibir más notificaciones, puedes <a href="#">darte de baja aquí</a></p>
+        </div>
+    </div>
+</body>
+</html> 
