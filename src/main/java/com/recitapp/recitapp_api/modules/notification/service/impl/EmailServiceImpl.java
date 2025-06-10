@@ -101,4 +101,54 @@ public class EmailServiceImpl implements EmailService {
             throw new RuntimeException("Failed to send email with attachment", e);
         }
     }
+
+    @Override
+    public void sendNewEventEmail(String recipientEmail, String eventName, String artistName, String eventDate, String venueName) {
+        try {
+            Map<String, Object> variables = Map.of(
+                "eventName", eventName,
+                "artistName", artistName,
+                "eventDate", eventDate,
+                "venueName", venueName,
+                "userName", "Usuario"
+            );
+            
+            sendTemplateEmail(
+                recipientEmail,
+                "🎵 Nuevo Evento Disponible: " + eventName,
+                "email/new-event",
+                variables
+            );
+            
+            log.info("New event email sent successfully to: {} for event: {}", recipientEmail, eventName);
+        } catch (Exception e) {
+            log.error("Failed to send new event email to {}: {}", recipientEmail, e.getMessage());
+            throw new RuntimeException("Failed to send new event email", e);
+        }
+    }
+
+    @Override
+    public void sendLowAvailabilityEmail(String recipientEmail, String eventName, Integer ticketsRemaining) {
+        try {
+            Map<String, Object> variables = Map.of(
+                "eventName", eventName,
+                "ticketsRemaining", ticketsRemaining,
+                "userName", "Usuario",
+                "venueName", "Venue por confirmar",
+                "eventDate", "Fecha por confirmar"
+            );
+            
+            sendTemplateEmail(
+                recipientEmail,
+                "⚠️ Pocas Entradas Disponibles: " + eventName,
+                "email/low-availability",
+                variables
+            );
+            
+            log.info("Low availability email sent successfully to: {} for event: {}", recipientEmail, eventName);
+        } catch (Exception e) {
+            log.error("Failed to send low availability email to {}: {}", recipientEmail, e.getMessage());
+            throw new RuntimeException("Failed to send low availability email", e);
+        }
+    }
 } 

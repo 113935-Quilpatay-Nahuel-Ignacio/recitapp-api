@@ -23,4 +23,14 @@ public interface EmailService {
      * Envía un email con adjuntos
      */
     void sendEmailWithAttachment(String to, String subject, String text, String attachmentPath, String attachmentName);
+    
+    /**
+     * Envía email de nuevo evento usando plantilla
+     */
+    void sendNewEventEmail(String recipientEmail, String eventName, String artistName, String eventDate, String venueName);
+    
+    /**
+     * Envía email de baja disponibilidad usando plantilla
+     */
+    void sendLowAvailabilityEmail(String recipientEmail, String eventName, Integer ticketsRemaining);
 }

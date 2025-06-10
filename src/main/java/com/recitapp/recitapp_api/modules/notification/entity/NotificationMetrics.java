@@ -35,7 +35,7 @@ public class NotificationMetrics {
     @Column(name = "provider_response", columnDefinition = "TEXT")
     private String providerResponse;
 
-    @Column(name = "metadata", columnDefinition = "JSONB")
+    @Column(name = "metadata", columnDefinition = "JSON")
     private String metadata;
 
     @PrePersist

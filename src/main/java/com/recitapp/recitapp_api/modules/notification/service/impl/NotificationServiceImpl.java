@@ -16,7 +16,7 @@ import com.recitapp.recitapp_api.modules.notification.entity.UserDeviceToken;
 import com.recitapp.recitapp_api.modules.notification.service.EmailService;
 import com.recitapp.recitapp_api.modules.notification.service.PushNotificationService;
 import com.recitapp.recitapp_api.modules.notification.service.SmsService;
-import com.recitapp.recitapp_api.modules.notification.service.WhatsAppService;
+// import com.recitapp.recitapp_api.modules.notification.service.WhatsAppService; // DESACTIVADO: Requiere Twilio de pago
 import com.recitapp.recitapp_api.modules.ticket.entity.Ticket;
 import com.recitapp.recitapp_api.modules.ticket.repository.TicketRepository;
 import com.recitapp.recitapp_api.modules.user.entity.User;
@@ -59,7 +59,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final EmailService emailService;
     private final PushNotificationService pushNotificationService;
     private final SmsService smsService;
-    private final WhatsAppService whatsAppService;
+    // private final WhatsAppService whatsAppService; // DESACTIVADO: Requiere Twilio de pago
     
     // Additional repositories for enhanced functionality
     private final UserDeviceTokenRepository deviceTokenRepository;
@@ -626,7 +626,8 @@ public class NotificationServiceImpl implements NotificationService {
                 sendSmsNotification(user, type, content, eventId, artistId, venueId);
                 break;
             case "WHATSAPP":
-                sendWhatsAppNotification(user, type, content, eventId, artistId, venueId);
+                // sendWhatsAppNotification(user, type, content, eventId, artistId, venueId); // DESACTIVADO: Requiere Twilio de pago
+                log.warn("WhatsApp notifications are temporarily disabled - requires paid Twilio account");
                 break;
             default:
                 log.warn("Unknown notification channel: {}", channelName);
@@ -696,6 +697,12 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+    // ==========================================
+    // WHATSAPP NOTIFICATION - TEMPORALMENTE DESACTIVADO
+    // ==========================================
+    // NOTA: WhatsApp requiere cuenta Twilio de pago
+    
+    /*
     private void sendWhatsAppNotification(User user, NotificationType type, String content, 
                                         Long eventId, Long artistId, Long venueId) {
         try {
@@ -718,6 +725,7 @@ public class NotificationServiceImpl implements NotificationService {
             log.error("Failed to send WhatsApp notification to user {}: {}", user.getId(), e.getMessage());
         }
     }
+    */
 
     private String generateEmailSubject(NotificationType type, Long eventId, Long artistId, Long venueId) {
         String typeName = type.getName();
@@ -830,6 +838,8 @@ public class NotificationServiceImpl implements NotificationService {
         return parameters.toArray(new String[0]);
     }
 
+    /*
+    // WHATSAPP PARAMETERS - TEMPORALMENTE DESACTIVADO
     private Map<String, String> buildWhatsAppParameters(Long eventId, Long artistId, Long venueId) {
         Map<String, String> parameters = new HashMap<>();
         
@@ -861,6 +871,7 @@ public class NotificationServiceImpl implements NotificationService {
         
         return parameters;
     }
+    */
 
     private String getUserDeviceToken(Long userId) {
         // Buscar el token más reciente del usuario (prioridad Android > iOS > Web)

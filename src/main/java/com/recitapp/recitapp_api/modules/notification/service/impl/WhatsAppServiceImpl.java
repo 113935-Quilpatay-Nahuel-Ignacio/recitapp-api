@@ -1,5 +1,22 @@
 package com.recitapp.recitapp_api.modules.notification.service.impl;
 
+/**
+ * WhatsApp Service Implementation using Twilio
+ * 
+ * IMPORTANT SETUP REQUIREMENTS:
+ * 1. Configure Twilio WhatsApp Sandbox:
+ *    - Go to Twilio Console > Messaging > Try it out > Send a WhatsApp message
+ *    - Follow the sandbox setup instructions
+ *    - Add recipient phone numbers to the sandbox (they must send a specific message first)
+ * 
+ * 2. Configuration properties required:
+ *    - twilio.whatsapp.account.sid: Your Twilio Account SID
+ *    - twilio.whatsapp.auth.token: Your Twilio Auth Token
+ *    - twilio.whatsapp.number: Twilio WhatsApp number (e.g., whatsapp:+14155238886)
+ * 
+ * 3. For production: You need a Twilio WhatsApp Business API account
+ */
+
 import com.recitapp.recitapp_api.modules.notification.service.WhatsAppService;
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
@@ -12,7 +29,14 @@ import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 
-@Service
+// ==========================================
+// WHATSAPP SERVICE - TEMPORALMENTE DESACTIVADO
+// ==========================================
+// NOTA: WhatsApp requiere cuenta Twilio de pago
+// Este código se mantiene comentado para futuras implementaciones
+// Para activar: descomentar @Service y toda la implementación
+
+// @Service
 @Slf4j
 public class WhatsAppServiceImpl implements WhatsAppService {
 
@@ -27,21 +51,42 @@ public class WhatsAppServiceImpl implements WhatsAppService {
 
     @PostConstruct
     public void initTwilio() {
+        log.info("Inicializando WhatsApp Service...");
+        log.info("Account SID: {}", whatsappAccountSid != null ? whatsappAccountSid.substring(0, Math.min(10, whatsappAccountSid.length())) + "..." : "null");
+        log.info("Auth Token: {}", whatsappAuthToken != null ? "***[CONFIGURED]***" : "null");
+        log.info("WhatsApp Number: {}", whatsappNumber);
+        
         if (whatsappAccountSid != null && !whatsappAccountSid.isEmpty() && 
             whatsappAuthToken != null && !whatsappAuthToken.isEmpty()) {
-            // Solo inicializar si tenemos credenciales de WhatsApp
-            log.info("Twilio WhatsApp Service inicializado con Account SID: {} y número: {}", 
-                     whatsappAccountSid, whatsappNumber);
+            try {
+                // Inicializar Twilio con las credenciales de WhatsApp
+                Twilio.init(whatsappAccountSid, whatsappAuthToken);
+                log.info("✅ Twilio WhatsApp Service inicializado exitosamente");
+                log.info("📱 WhatsApp Number configurado: {}", whatsappNumber);
+            } catch (Exception e) {
+                log.error("❌ Error inicializando Twilio WhatsApp: {}", e.getMessage());
+            }
         } else {
-            log.warn("Credenciales de WhatsApp no configuradas. Servicio WhatsApp no disponible.");
+            log.warn("⚠️ Credenciales de WhatsApp no configuradas. Servicio WhatsApp no disponible.");
         }
     }
 
     @Override
     public boolean sendWhatsAppMessage(String phoneNumber, String message) {
         try {
+            // Validar que el servicio esté configurado
+            if (whatsappAccountSid == null || whatsappAccountSid.isEmpty() || 
+                whatsappAuthToken == null || whatsappAuthToken.isEmpty() ||
+                whatsappNumber == null || whatsappNumber.isEmpty()) {
+                log.error("WhatsApp service not properly configured. Cannot send message to {}", phoneNumber);
+                return false;
+            }
+            
             // Formatear número para WhatsApp
             String formattedNumber = formatWhatsAppNumber(phoneNumber);
+            
+            log.debug("Sending WhatsApp message from {} to {} with message: {}", 
+                     whatsappNumber, formattedNumber, message.substring(0, Math.min(50, message.length())));
             
             Message twilioMessage = Message.creator(
                 new PhoneNumber(formattedNumber),
@@ -55,6 +100,18 @@ public class WhatsAppServiceImpl implements WhatsAppService {
 
         } catch (Exception e) {
             log.error("Error enviando mensaje WhatsApp a {}: {}", phoneNumber, e.getMessage());
+            log.error("Detalles del error: From={}, To={}, Exception type: {}", 
+                     whatsappNumber, formatWhatsAppNumber(phoneNumber), e.getClass().getSimpleName());
+            
+            // Proporcionar información específica sobre errores comunes
+            if (e.getMessage().contains("Channel with the specified From address")) {
+                log.error("❌ SOLUCIÓN: El número WhatsApp '{}' no está configurado correctamente en Twilio.", whatsappNumber);
+                log.error("📋 PASOS PARA SOLUCIONARLO:");
+                log.error("   1. Ve a Twilio Console > Messaging > Try it out > Send a WhatsApp message");
+                log.error("   2. Configura el WhatsApp Sandbox");
+                log.error("   3. Verifica que el número '{}' esté habilitado para WhatsApp", whatsappNumber);
+            }
+            
             return false;
         }
     }

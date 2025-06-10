@@ -35,6 +35,14 @@ build/
 ### Security - Configuration files with credentials ###
 src/main/resources/application.properties
 src/main/resources/application-notifications.properties
+src/main/resources/application-local.properties
 src/main/resources/firebase/*.json
+src/main/resources/firebase/recitapp-*-firebase-adminsdk-*.json
 *.properties
 !application-template.properties
+!application-notifications.properties.example
+
+# Environment-specific files
+.env
+.env.local
+.env.production

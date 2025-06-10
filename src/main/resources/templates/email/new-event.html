@@ -61,7 +61,7 @@
         <div class="event-info">
             <h2 th:text="${eventName}">Nombre del Evento</h2>
             <p><strong>📍 Lugar:</strong> <span th:text="${venueName}">Venue</span></p>
-            <p><strong>📅 Fecha:</strong> <span th:text="${#temporals.format(eventDate, 'dd/MM/yyyy HH:mm')}">Fecha</span></p>
+            <p><strong>📅 Fecha:</strong> <span th:text="${eventDate}">Fecha</span></p>
         </div>
         
         <p>¡No te pierdas esta increíble oportunidad! Las entradas están disponibles ahora.</p>
