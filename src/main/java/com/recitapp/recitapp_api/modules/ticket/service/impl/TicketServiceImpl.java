@@ -29,7 +29,9 @@ import com.recitapp.recitapp_api.modules.user.entity.User;
 import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
 import com.recitapp.recitapp_api.modules.venue.entity.VenueSection;
 import com.recitapp.recitapp_api.modules.venue.repository.VenueSectionRepository;
+import com.recitapp.recitapp_api.modules.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +44,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TicketServiceImpl implements TicketService {
 
     private final TicketRepository ticketRepository;
@@ -56,6 +59,7 @@ public class TicketServiceImpl implements TicketService {
     private final PaymentMethodRepository paymentMethodRepository;
     private final PromotionRepository promotionRepository;
     private final QRGenerator qrGenerator;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -409,6 +413,24 @@ public class TicketServiceImpl implements TicketService {
 
         // Count sold tickets for this event
         Long soldTickets = ticketRepository.countSoldTicketsByEventId(eventId);
+        
+        // Calculate availability percentage
+        double availabilityPercentage = totalCapacity > 0 ? 
+            ((totalCapacity - soldTickets.doubleValue()) / totalCapacity.doubleValue()) * 100 : 0;
+
+        // 🚀 AUTOMÁTICO: Enviar notificaciones de baja disponibilidad
+        try {
+            // Notificar cuando queda menos del 20% de entradas
+            if (availabilityPercentage <= 20 && availabilityPercentage > 0) {
+                int remainingTickets = (int) (totalCapacity - soldTickets);
+                notificationService.sendLowAvailabilityAlert(eventId, remainingTickets);
+                log.info("Notificación de baja disponibilidad enviada para evento {}: {} entradas restantes", 
+                        eventId, remainingTickets);
+            }
+        } catch (Exception e) {
+            log.warn("Error enviando notificación de baja disponibilidad para evento {}: {}", 
+                    eventId, e.getMessage());
+        }
 
         // If all tickets are sold, update event status to "AGOTADO"
         if (soldTickets >= totalCapacity) {
@@ -416,6 +438,15 @@ public class TicketServiceImpl implements TicketService {
             eventStatusRepository.findByName("AGOTADO")
                     .ifPresent(event::setStatus);
             eventRepository.save(event);
+            
+            // 🚀 AUTOMÁTICO: Enviar notificaciones de evento agotado (con 0 entradas restantes)
+            try {
+                notificationService.sendLowAvailabilityAlert(eventId, 0);
+                log.info("Notificación de evento agotado enviada para evento {}", eventId);
+            } catch (Exception e) {
+                log.warn("Error enviando notificación de evento agotado para evento {}: {}", 
+                        eventId, e.getMessage());
+            }
         }
     }
 }

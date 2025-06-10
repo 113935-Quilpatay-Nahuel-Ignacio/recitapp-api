@@ -22,8 +22,10 @@ import com.recitapp.recitapp_api.modules.venue.entity.Venue;
 import com.recitapp.recitapp_api.modules.venue.entity.VenueSection;
 import com.recitapp.recitapp_api.modules.venue.repository.VenueRepository;
 import com.recitapp.recitapp_api.modules.venue.repository.VenueSectionRepository;
+import com.recitapp.recitapp_api.modules.notification.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EventServiceImpl implements EventService {
 
     private final EventRepository eventRepository;
@@ -46,6 +49,7 @@ public class EventServiceImpl implements EventService {
     private final EventStatisticsRepository eventStatisticsRepository;
     private final TicketPriceRepository ticketPriceRepository;
     private final VenueSectionRepository venueSectionRepository;
+    private final NotificationService notificationService;
 
     // Actualiza el método createEvent con mejor manejo de excepciones
     @Override
@@ -177,6 +181,28 @@ public class EventServiceImpl implements EventService {
             }
         }
 
+        // 🚀 AUTOMÁTICO: Enviar notificaciones de nuevo evento
+        try {
+            // Notificar a seguidores del artista principal
+            if (savedEvent.getMainArtist() != null) {
+                notificationService.sendNewEventAlertToArtistFollowers(
+                    savedEvent.getMainArtist().getId(), savedEvent.getId());
+                log.info("Notificaciones enviadas a seguidores del artista {} para evento {}", 
+                        savedEvent.getMainArtist().getId(), savedEvent.getId());
+            }
+            
+            // Notificar a seguidores del venue
+            notificationService.sendNewEventAlertToVenueFollowers(
+                savedEvent.getVenue().getId(), savedEvent.getId());
+            log.info("Notificaciones enviadas a seguidores del venue {} para evento {}", 
+                    savedEvent.getVenue().getId(), savedEvent.getId());
+                    
+        } catch (Exception e) {
+            log.warn("Error enviando notificaciones automáticas para evento {}: {}", 
+                    savedEvent.getId(), e.getMessage());
+            // No fallar la creación del evento por problemas de notificación
+        }
+
         return mapToDTO(savedEvent);
     }
 
@@ -238,6 +264,24 @@ public class EventServiceImpl implements EventService {
 
         // Guardar los cambios
         Event updatedEvent = eventRepository.save(event);
+        
+        // 🚀 AUTOMÁTICO: Enviar notificaciones de modificación si hay cambios significativos
+        boolean hasSignificantChanges = eventDTO.getStartDateTime() != null || 
+                                       eventDTO.getEndDateTime() != null || 
+                                       eventDTO.getVenueId() != null ||
+                                       eventDTO.getStatusName() != null;
+        
+        if (hasSignificantChanges) {
+            try {
+                String changeDescription = buildChangeDescription(eventDTO);
+                notificationService.sendEventModificationNotification(updatedEvent.getId(), changeDescription);
+                log.info("Notificaciones de modificación enviadas para evento {}: {}", 
+                        updatedEvent.getId(), changeDescription);
+            } catch (Exception e) {
+                log.warn("Error enviando notificaciones de modificación para evento {}: {}", 
+                        updatedEvent.getId(), e.getMessage());
+            }
+        }
 
         // Actualizar artistas asociados si se proporcionaron
         if (eventDTO.getArtistIds() != null) {
@@ -502,6 +546,29 @@ public class EventServiceImpl implements EventService {
         // en una tabla adicional o en un campo específico del evento
 
         Event verifiedEvent = eventRepository.save(event);
+        
+        // 🚀 AUTOMÁTICO: Enviar notificaciones cuando el evento se verifica (se publica oficialmente)
+        if (event.getVerified()) {
+            try {
+                // Notificar a seguidores del artista principal
+                if (verifiedEvent.getMainArtist() != null) {
+                    notificationService.sendNewEventAlertToArtistFollowers(
+                        verifiedEvent.getMainArtist().getId(), verifiedEvent.getId());
+                    log.info("Notificaciones de evento verificado enviadas a seguidores del artista {} para evento {}", 
+                            verifiedEvent.getMainArtist().getId(), verifiedEvent.getId());
+                }
+                
+                // Notificar a seguidores del venue
+                notificationService.sendNewEventAlertToVenueFollowers(
+                    verifiedEvent.getVenue().getId(), verifiedEvent.getId());
+                log.info("Notificaciones de evento verificado enviadas a seguidores del venue {} para evento {}", 
+                        verifiedEvent.getVenue().getId(), verifiedEvent.getId());
+                        
+            } catch (Exception e) {
+                log.warn("Error enviando notificaciones de evento verificado para evento {}: {}", 
+                        verifiedEvent.getId(), e.getMessage());
+            }
+        }
 
         return mapToDTO(verifiedEvent);
     }
@@ -547,7 +614,16 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> EntityNotFoundException.createByName("Estado de evento", "CANCELADO"));
 
         event.setStatus(canceledStatus);
-        eventRepository.save(event);
+        Event canceledEvent = eventRepository.save(event);
+        
+        // 🚀 AUTOMÁTICO: Enviar notificaciones de cancelación
+        try {
+            notificationService.sendEventCancellationNotification(canceledEvent.getId());
+            log.info("Notificaciones de cancelación enviadas para evento {}", canceledEvent.getId());
+        } catch (Exception e) {
+            log.warn("Error enviando notificaciones de cancelación para evento {}: {}", 
+                    canceledEvent.getId(), e.getMessage());
+        }
     }
 
     @Override
@@ -724,5 +800,38 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new EntityNotFoundException("Event not found with ID: " + eventId));
 
         return event.getStatus().getName().equals("AGOTADO");
+    }
+    
+    /**
+     * Construye una descripción de los cambios realizados en un evento
+     */
+    private String buildChangeDescription(EventDTO eventDTO) {
+        StringBuilder changes = new StringBuilder();
+        
+        if (eventDTO.getStartDateTime() != null) {
+            changes.append("Fecha de inicio actualizada. ");
+        }
+        
+        if (eventDTO.getEndDateTime() != null) {
+            changes.append("Fecha de fin actualizada. ");
+        }
+        
+        if (eventDTO.getVenueId() != null) {
+            changes.append("Recinto del evento modificado. ");
+        }
+        
+        if (eventDTO.getStatusName() != null) {
+            changes.append("Estado del evento actualizado. ");
+        }
+        
+        if (eventDTO.getName() != null) {
+            changes.append("Nombre del evento modificado. ");
+        }
+        
+        if (eventDTO.getDescription() != null) {
+            changes.append("Descripción actualizada. ");
+        }
+        
+        return changes.length() > 0 ? changes.toString().trim() : "Información del evento actualizada";
     }
 }
