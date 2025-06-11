@@ -36,11 +36,23 @@ build/
 src/main/resources/application.properties
 src/main/resources/application-notifications.properties
 src/main/resources/application-local.properties
+
+# Firebase service account files - NEVER commit these!
 src/main/resources/firebase/*.json
+src/main/resources/firebase/firebase-service-account.json
 src/main/resources/firebase/recitapp-*-firebase-adminsdk-*.json
+src/main/resources/firebase/*-service-account.json
+src/main/resources/firebase/*-adminsdk-*.json
+
+# Other configuration files
 *.properties
 !application-template.properties
 !application-notifications.properties.example
+
+# API Keys and secrets
+**/api-keys.json
+**/secrets.json
+**/credentials.json
 
 # Environment-specific files
 .env
