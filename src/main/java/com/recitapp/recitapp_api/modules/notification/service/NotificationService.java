@@ -48,6 +48,11 @@ public interface NotificationService {
     NotificationDTO createNotification(NotificationCreateDTO createDTO);
     void sendBulkNotification(BulkNotificationDTO bulkDTO);
 
+    // Delete notifications
+    void deleteNotification(Long notificationId);
+    void deleteMultipleNotifications(Long userId, List<Long> notificationIds);
+    void deleteReadNotifications(Long userId);
+
     // Query notifications by relation
     List<NotificationDTO> getNotificationsByEvent(Long eventId);
     List<NotificationDTO> getNotificationsByArtist(Long artistId);

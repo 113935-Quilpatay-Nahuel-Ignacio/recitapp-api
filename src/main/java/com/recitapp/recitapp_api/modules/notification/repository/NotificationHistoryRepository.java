@@ -19,6 +19,8 @@ public interface NotificationHistoryRepository extends JpaRepository<Notificatio
 
     List<NotificationHistory> findByUserIdAndReadAtIsNullOrderBySentAtDesc(Long userId);
 
+    List<NotificationHistory> findByUserIdAndReadAtIsNotNull(Long userId);
+
     Long countByUserIdAndReadAtIsNull(Long userId);
 
     @Query("SELECT n FROM NotificationHistory n WHERE n.user.id = :userId AND n.sentAt >= :startDate " +

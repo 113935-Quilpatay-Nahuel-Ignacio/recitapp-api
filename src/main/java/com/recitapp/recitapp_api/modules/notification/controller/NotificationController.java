@@ -76,6 +76,26 @@ public class NotificationController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{notificationId}")
+    public ResponseEntity<Void> deleteNotification(@PathVariable Long notificationId) {
+        notificationService.deleteNotification(notificationId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/user/{userId}/multiple")
+    public ResponseEntity<Void> deleteMultipleNotifications(
+            @PathVariable Long userId,
+            @RequestBody List<Long> notificationIds) {
+        notificationService.deleteMultipleNotifications(userId, notificationIds);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/user/{userId}/read")
+    public ResponseEntity<Void> deleteReadNotifications(@PathVariable Long userId) {
+        notificationService.deleteReadNotifications(userId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping
     public ResponseEntity<NotificationDTO> createNotification(@RequestBody NotificationCreateDTO createDTO) {
         return new ResponseEntity<>(notificationService.createNotification(createDTO), HttpStatus.CREATED);

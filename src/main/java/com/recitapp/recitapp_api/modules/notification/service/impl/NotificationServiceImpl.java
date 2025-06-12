@@ -64,7 +64,7 @@ public class NotificationServiceImpl implements NotificationService {
     // Additional repositories for enhanced functionality
     private final UserDeviceTokenRepository deviceTokenRepository;
 
-    // RAPP113935-114: Register notification preferences
+    // RAPP113935-113: Register notification preferences
     @Override
     public NotificationPreferenceDTO getUserNotificationPreferences(Long userId) {
         User user = userRepository.findById(userId)
@@ -483,6 +483,49 @@ public class NotificationServiceImpl implements NotificationService {
             } catch (Exception e) {
                 log.error("Error sending notification to user {}: {}", userId, e.getMessage());
             }
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteNotification(Long notificationId) {
+        if (!historyRepository.existsById(notificationId)) {
+            throw new EntityNotFoundException("Notificación no encontrada con ID: " + notificationId);
+        }
+        historyRepository.deleteById(notificationId);
+        log.info("Notificación eliminada con ID: {}", notificationId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteMultipleNotifications(Long userId, List<Long> notificationIds) {
+        validateUser(userId);
+        
+        // Verificar que todas las notificaciones pertenecen al usuario
+        List<NotificationHistory> notifications = historyRepository.findAllById(notificationIds);
+        for (NotificationHistory notification : notifications) {
+            if (!notification.getUser().getId().equals(userId)) {
+                throw new RecitappException("No tienes permisos para eliminar la notificación con ID: " + notification.getId());
+            }
+        }
+        
+        historyRepository.deleteAllById(notificationIds);
+        log.info("Eliminadas {} notificaciones para el usuario {}", notificationIds.size(), userId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteReadNotifications(Long userId) {
+        validateUser(userId);
+        
+        List<NotificationHistory> readNotifications = historyRepository.findByUserIdAndReadAtIsNotNull(userId);
+        if (!readNotifications.isEmpty()) {
+            List<Long> readNotificationIds = readNotifications.stream()
+                    .map(NotificationHistory::getId)
+                    .collect(Collectors.toList());
+            
+            historyRepository.deleteAllById(readNotificationIds);
+            log.info("Eliminadas {} notificaciones leídas para el usuario {}", readNotificationIds.size(), userId);
         }
     }
 
