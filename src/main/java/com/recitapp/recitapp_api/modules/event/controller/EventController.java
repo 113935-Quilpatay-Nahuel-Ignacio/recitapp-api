@@ -52,6 +52,13 @@ public class EventController {
         return ResponseEntity.ok(eventDetail);
     }
 
+    @GetMapping("/{id}/edit")
+    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
+    public ResponseEntity<EventDTO> getEventForEdit(@PathVariable Long id) {
+        EventDTO event = eventService.getEventForEdit(id);
+        return ResponseEntity.ok(event);
+    }
+
     @GetMapping
     public ResponseEntity<List<EventDTO>> getAllEvents(
             @RequestParam(required = false) Boolean upcomingOnly) {

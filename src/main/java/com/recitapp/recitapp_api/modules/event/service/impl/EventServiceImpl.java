@@ -834,4 +834,13 @@ public class EventServiceImpl implements EventService {
         
         return changes.length() > 0 ? changes.toString().trim() : "Información del evento actualizada";
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EventDTO getEventForEdit(Long eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with ID: " + eventId));
+
+        return mapToDTO(event);
+    }
 }

@@ -41,6 +41,14 @@ public interface EventService {
     EventDetailDTO getEventDetail(Long eventId);
 
     /**
+     * Obtiene información completa de un evento para edición (incluye precios de tickets)
+     *
+     * @param eventId ID del evento
+     * @return DTO con información completa del evento para edición
+     */
+    EventDTO getEventForEdit(Long eventId);
+
+    /**
      * Obtiene todos los eventos, con opción de filtrar solo por próximos eventos
      *
      * @param upcomingOnly Si es true, solo se obtienen eventos futuros
