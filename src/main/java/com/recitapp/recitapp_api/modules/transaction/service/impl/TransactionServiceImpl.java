@@ -392,6 +392,23 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PaymentMethodDTO> getPaymentMethods(Boolean includeInactive) {
+        log.info("Getting payment methods, includeInactive: {}", includeInactive);
+
+        List<PaymentMethod> paymentMethods;
+        if (includeInactive) {
+            paymentMethods = paymentMethodRepository.findAll();
+        } else {
+            paymentMethods = paymentMethodRepository.findByActiveTrue();
+        }
+
+        return paymentMethods.stream()
+                .map(this::mapToPaymentMethodDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public void updateWalletBalance(WalletTransactionDTO walletTransactionDTO) {
         log.info("Updating wallet balance for user ID: {}, operation: {}, amount: {}",

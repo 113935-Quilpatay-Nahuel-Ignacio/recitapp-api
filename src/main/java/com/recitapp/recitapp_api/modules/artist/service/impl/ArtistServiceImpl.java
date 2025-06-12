@@ -180,17 +180,36 @@ public class ArtistServiceImpl implements ArtistService {
     public List<EventDTO> getArtistEvents(Long artistId, Boolean includePastEvents) {
         findArtistById(artistId);
 
-        List<EventArtist> eventArtists;
         LocalDateTime now = LocalDateTime.now();
+        List<EventDTO> events = new ArrayList<>();
 
+        // Get events where the artist is in the EventArtist table
+        List<EventArtist> eventArtists;
         if (includePastEvents) {
             eventArtists = eventArtistRepository.findByArtistId(artistId);
         } else {
             eventArtists = eventArtistRepository.findUpcomingEventsByArtistId(artistId, now);
         }
 
-        return eventArtists.stream()
+        events.addAll(eventArtists.stream()
                 .map(ea -> mapEventToDTO(ea.getEvent()))
+                .collect(Collectors.toList()));
+
+        // Get events where the artist is the main artist
+        List<Event> mainArtistEvents;
+        if (includePastEvents) {
+            mainArtistEvents = eventRepository.findByMainArtistId(artistId);
+        } else {
+            mainArtistEvents = eventRepository.findByMainArtistIdAndStartDateTimeAfter(artistId, now);
+        }
+
+        events.addAll(mainArtistEvents.stream()
+                .map(this::mapEventToDTO)
+                .collect(Collectors.toList()));
+
+        // Remove duplicates (in case an artist is both main artist and in EventArtist table)
+        return events.stream()
+                .distinct()
                 .collect(Collectors.toList());
     }
 

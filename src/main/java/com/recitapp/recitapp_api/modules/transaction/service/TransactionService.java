@@ -27,6 +27,7 @@ public interface TransactionService {
     PaymentMethodDTO updatePaymentMethod(Long paymentMethodId, PaymentMethodDTO paymentMethodDTO);
     void deletePaymentMethod(Long paymentMethodId);
     List<PaymentMethodDTO> getActivePaymentMethods();
+    List<PaymentMethodDTO> getPaymentMethods(Boolean includeInactive);
 
     // RAPP113935-104: Register balance in virtual wallet
     void updateWalletBalance(WalletTransactionDTO walletTransactionDTO);

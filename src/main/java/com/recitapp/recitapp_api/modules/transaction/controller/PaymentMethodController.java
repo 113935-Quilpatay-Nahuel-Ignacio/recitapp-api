@@ -19,8 +19,9 @@ public class PaymentMethodController {
 
     // RAPP113935-103: Update available payment methods
     @GetMapping
-    public ResponseEntity<List<PaymentMethodDTO>> getActivePaymentMethods() {
-        List<PaymentMethodDTO> paymentMethods = transactionService.getActivePaymentMethods();
+    public ResponseEntity<List<PaymentMethodDTO>> getPaymentMethods(
+            @RequestParam(defaultValue = "false") Boolean includeInactive) {
+        List<PaymentMethodDTO> paymentMethods = transactionService.getPaymentMethods(includeInactive);
         return ResponseEntity.ok(paymentMethods);
     }
 
