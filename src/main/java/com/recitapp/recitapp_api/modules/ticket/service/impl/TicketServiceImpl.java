@@ -39,6 +39,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -226,11 +227,61 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Transactional
     public boolean validateTicket(Long ticketId, String qrCode) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new EntityNotFoundException("Ticket not found with ID: " + ticketId));
 
-        return ticket.getQrCode().equals(qrCode) && ticket.getStatus().getName().equals("VENDIDA");
+        // Solo validar tickets en estado VENDIDA
+        String currentStatus = ticket.getStatus().getName();
+        boolean isValidStatus = currentStatus.equals("VENDIDA");
+        
+        // Validar QR Code
+        boolean isValidQR = ticket.getQrCode().equals(qrCode);
+        
+        // Si el ticket es válido y está en estado VENDIDA, cambiarlo a USADA
+        if (isValidStatus && isValidQR) {
+            TicketStatus usedStatus = ticketStatusRepository.findByName("USADA")
+                    .orElseThrow(() -> new EntityNotFoundException("Ticket status 'USADA' not found"));
+            
+            ticket.setStatus(usedStatus);
+            ticket.setUpdatedAt(LocalDateTime.now());
+            ticketRepository.save(ticket);
+            
+            log.info("Ticket {} validated and status changed from VENDIDA to USADA", ticketId);
+        }
+        
+        return isValidStatus && isValidQR;
+    }
+
+    /**
+     * Validates ticket using identification code as fallback method
+     */
+    @Transactional
+    public boolean validateTicketByCode(String identificationCode) {
+        Optional<Ticket> ticketOpt = ticketRepository.findByIdentificationCode(identificationCode);
+        
+        if (ticketOpt.isEmpty()) {
+            return false;
+        }
+        
+        Ticket ticket = ticketOpt.get();
+        String currentStatus = ticket.getStatus().getName();
+        boolean isValidStatus = currentStatus.equals("VENDIDA");
+        
+        // Si el ticket es válido y está en estado VENDIDA, cambiarlo a USADA
+        if (isValidStatus) {
+            TicketStatus usedStatus = ticketStatusRepository.findByName("USADA")
+                    .orElseThrow(() -> new EntityNotFoundException("Ticket status 'USADA' not found"));
+            
+            ticket.setStatus(usedStatus);
+            ticket.setUpdatedAt(LocalDateTime.now());
+            ticketRepository.save(ticket);
+            
+            log.info("Ticket {} validated by identification code and status changed to USADA", ticket.getId());
+        }
+        
+        return isValidStatus;
     }
 
     @Override

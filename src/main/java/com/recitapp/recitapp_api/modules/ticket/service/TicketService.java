@@ -22,6 +22,8 @@ public interface TicketService {
 
     boolean validateTicket(Long ticketId, String qrCode);
 
+    boolean validateTicketByCode(String identificationCode);
+
     TicketDTO transferTicket(Long ticketId, Long newUserId, String attendeeFirstName,
                              String attendeeLastName, String attendeeDni);
 

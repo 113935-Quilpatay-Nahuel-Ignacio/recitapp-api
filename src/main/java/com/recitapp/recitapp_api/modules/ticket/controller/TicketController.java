@@ -62,6 +62,13 @@ public class TicketController {
         return ResponseEntity.ok(isValid);
     }
 
+    @PostMapping("/validate-by-code")
+    public ResponseEntity<Boolean> validateTicketByCode(
+            @RequestParam String identificationCode) {
+        boolean isValid = ticketService.validateTicketByCode(identificationCode);
+        return ResponseEntity.ok(isValid);
+    }
+
     @PostMapping("/{id}/generate-qr")
     public ResponseEntity<String> generateQRCode(@PathVariable Long id) {
         String qrCode = ticketService.generateTicketQR(id);
