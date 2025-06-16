@@ -34,18 +34,57 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendSimpleEmail(String to, String subject, String text) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromName + " <" + fromEmail + ">");
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(text);
-            
-            mailSender.send(message);
+            // Convert simple email to HTML format with logo
+            String htmlContent = buildSimpleEmailHtml(subject, text);
+            sendHtmlEmail(to, subject, htmlContent);
             log.info("Simple email sent successfully to: {}", to);
         } catch (Exception e) {
             log.error("Failed to send simple email to {}: {}", to, e.getMessage());
             throw new RuntimeException("Failed to send email", e);
         }
+    }
+    
+    private String buildSimpleEmailHtml(String subject, String text) {
+        StringBuilder html = new StringBuilder();
+        html.append("<!DOCTYPE html>");
+        html.append("<html>");
+        html.append("<head>");
+        html.append("<meta charset='UTF-8'>");
+        html.append("<meta name='viewport' content='width=device-width, initial-scale=1.0'>");
+        html.append("<style>");
+        html.append("body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background-color: #f4f4f4; }");
+        html.append(".container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.1); }");
+        html.append(".header { background-color: #22C55E; color: white; padding: 20px; text-align: center; }");
+        html.append(".logo { margin-bottom: 15px; }");
+        html.append(".logo-circle { display: inline-block; width: 48px; height: 48px; background-color: #1a9e4a; border-radius: 50%; line-height: 48px; text-align: center; font-size: 24px; font-weight: bold; color: white; margin: 0 auto; }");
+        html.append(".content { padding: 30px; }");
+        html.append(".footer { text-align: center; padding: 20px; background-color: #f8f9fa; color: #666; font-size: 12px; }");
+        html.append("</style>");
+        html.append("</head>");
+        html.append("<body>");
+        
+        html.append("<div class='container'>");
+        html.append("<div class='header'>");
+        html.append("<div class='logo'>");
+        html.append("<div class='logo-circle'>R</div>");
+        html.append("</div>");
+        html.append("<h2>").append(subject).append("</h2>");
+        html.append("</div>");
+        
+        html.append("<div class='content'>");
+        html.append("<p>").append(text).append("</p>");
+        html.append("</div>");
+        
+        html.append("<div class='footer'>");
+        html.append("<p>Este es un email automático de Recitapp</p>");
+        html.append("<p>© 2024 Recitapp. Todos los derechos reservados.</p>");
+        html.append("</div>");
+        
+        html.append("</div>");
+        html.append("</body>");
+        html.append("</html>");
+        
+        return html.toString();
     }
 
     @Override
