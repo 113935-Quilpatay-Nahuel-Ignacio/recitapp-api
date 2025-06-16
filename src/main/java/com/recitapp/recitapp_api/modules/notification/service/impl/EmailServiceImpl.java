@@ -25,14 +25,17 @@ public class EmailServiceImpl implements EmailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
 
-    @Value("${spring.mail.username:noreply@recitapp.com}")
+    @Value("${spring.mail.from.email:recitapp@noreply.com}")
     private String fromEmail;
+
+    @Value("${spring.mail.from.name:Recitapp}")
+    private String fromName;
 
     @Override
     public void sendSimpleEmail(String to, String subject, String text) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
+            message.setFrom(fromName + " <" + fromEmail + ">");
             message.setTo(to);
             message.setSubject(subject);
             message.setText(text);
@@ -67,7 +70,7 @@ public class EmailServiceImpl implements EmailService {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
             
-            helper.setFrom(fromEmail);
+            helper.setFrom(fromName + " <" + fromEmail + ">");
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlContent, true); // true indica que es HTML
@@ -86,7 +89,7 @@ public class EmailServiceImpl implements EmailService {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
             
-            helper.setFrom(fromEmail);
+            helper.setFrom(fromName + " <" + fromEmail + ">");
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(text);

@@ -14,12 +14,16 @@ firebase.config.file=firebase/recitapp-niquilpatay-firebase-adminsdk-fbsvc-2f474
 # Email Configuration (Spring Boot Mail)
 spring.mail.host=smtp.gmail.com
 spring.mail.port=587
-spring.mail.username=${MAIL_USERNAME:tu-email@gmail.com}
-spring.mail.password=${MAIL_PASSWORD:tu-app-password-aqui}
+spring.mail.username=${MAIL_USERNAME:your-email@gmail.com}
+spring.mail.password=${MAIL_PASSWORD:your-app-password}
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 spring.mail.properties.mail.smtp.starttls.required=true
 spring.mail.properties.mail.smtp.ssl.trust=smtp.gmail.com
+
+# Email Display Configuration
+spring.mail.from.name=Recitapp
+spring.mail.from.email=recitapp@noreply.com
 
 # Twilio SMS Configuration
 twilio.account.sid=${TWILIO_ACCOUNT_SID:AC_tu_account_sid_aqui}

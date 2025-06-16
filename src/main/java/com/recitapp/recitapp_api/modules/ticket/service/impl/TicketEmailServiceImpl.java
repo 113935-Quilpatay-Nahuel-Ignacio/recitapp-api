@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.io.UnsupportedEncodingException;
 import java.time.format.DateTimeFormatter;
 
 @Service
@@ -21,8 +22,11 @@ public class TicketEmailServiceImpl implements TicketEmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username}")
+    @Value("${spring.mail.from.email:recitapp@noreply.com}")
     private String fromEmail;
+
+    @Value("${spring.mail.from.name:Recitapp}")
+    private String fromName;
 
     @Value("${app.name:RecitApp}")
     private String appName;
@@ -33,7 +37,7 @@ public class TicketEmailServiceImpl implements TicketEmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail);
+            helper.setFrom(fromEmail, fromName);
             helper.setTo(recipientEmail);
             helper.setSubject("Tu entrada para " + (ticket.getEventName() != null ? ticket.getEventName() : "el evento"));
 
@@ -43,7 +47,7 @@ public class TicketEmailServiceImpl implements TicketEmailService {
             mailSender.send(message);
             log.info("Ticket email sent successfully to: {}", recipientEmail);
 
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             log.error("Error sending ticket email to {}: {}", recipientEmail, e.getMessage(), e);
             throw new RuntimeException("Error sending ticket email", e);
         }
@@ -55,7 +59,7 @@ public class TicketEmailServiceImpl implements TicketEmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail);
+            helper.setFrom(fromEmail, fromName);
             helper.setTo(recipientEmail);
             helper.setSubject("Tu entrada para " + (ticket.getEventName() != null ? ticket.getEventName() : "el evento"));
 
@@ -69,7 +73,7 @@ public class TicketEmailServiceImpl implements TicketEmailService {
             mailSender.send(message);
             log.info("Ticket email with PDF attachment sent successfully to: {}", recipientEmail);
 
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             log.error("Error sending ticket email with attachment to {}: {}", recipientEmail, e.getMessage(), e);
             throw new RuntimeException("Error sending ticket email with attachment", e);
         }
@@ -78,6 +82,9 @@ public class TicketEmailServiceImpl implements TicketEmailService {
     private String buildEmailContent(TicketDTO ticket) {
         StringBuilder content = new StringBuilder();
         
+        // Base64 encoded Recitapp logo (R in green circle)
+        String logoBase64 = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIzMiIgZmlsbD0iIzIyQzU1RSIvPgogIDx0ZXh0IHg9IjMyIiB5PSI0MiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjMyIiBmb250LXdlaWdodD0iYm9sZCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiPlI8L3RleHQ+Cjwvc3ZnPg==";
+        
         content.append("<!DOCTYPE html>");
         content.append("<html>");
         content.append("<head>");
@@ -85,7 +92,8 @@ public class TicketEmailServiceImpl implements TicketEmailService {
         content.append("<style>");
         content.append("body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }");
         content.append(".container { max-width: 600px; margin: 0 auto; padding: 20px; }");
-        content.append(".header { background-color: #28a745; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }");
+        content.append(".header { background-color: #22C55E; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }");
+        content.append(".logo { display: inline-block; margin-bottom: 10px; }");
         content.append(".content { background-color: #f8f9fa; padding: 20px; border-radius: 0 0 8px 8px; }");
         content.append(".ticket-info { background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; }");
         content.append(".info-row { display: flex; justify-content: space-between; margin: 8px 0; padding: 8px 0; border-bottom: 1px solid #eee; }");
@@ -98,6 +106,9 @@ public class TicketEmailServiceImpl implements TicketEmailService {
         
         content.append("<div class='container'>");
         content.append("<div class='header'>");
+        content.append("<div class='logo'>");
+        content.append("<img src='").append(logoBase64).append("' alt='Recitapp' width='48' height='48' style='border-radius: 50%;' />");
+        content.append("</div>");
         content.append("<h1>¡Tu entrada está lista!</h1>");
         content.append("<p>Gracias por tu compra en ").append(appName).append("</p>");
         content.append("</div>");
