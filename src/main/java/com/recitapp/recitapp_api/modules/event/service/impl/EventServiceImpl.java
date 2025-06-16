@@ -843,4 +843,10 @@ public class EventServiceImpl implements EventService {
 
         return mapToDTO(event);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EventDTO convertToDTO(Event event) {
+        return mapToDTO(event);
+    }
 }

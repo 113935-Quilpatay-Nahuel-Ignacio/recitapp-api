@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -39,4 +41,14 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     // Find by identification code
     Optional<Ticket> findByIdentificationCode(String identificationCode);
+
+    // Métodos para administración de tickets vencidos
+    @Query("SELECT t FROM Ticket t " +
+           "WHERE t.status.name = 'VENDIDA' " +
+           "AND t.event.endDateTime < :now")
+    List<Ticket> findExpiredSoldTickets(@Param("now") LocalDateTime now);
+
+    // Estadísticas de tickets por estado
+    @Query("SELECT t.status.name, COUNT(t) FROM Ticket t GROUP BY t.status.name")
+    List<Object[]> getTicketStatisticsByStatus();
 }

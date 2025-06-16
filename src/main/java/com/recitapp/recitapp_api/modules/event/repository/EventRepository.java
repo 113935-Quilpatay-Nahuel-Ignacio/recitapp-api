@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
 
@@ -103,4 +104,28 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     // Buscar eventos cancelados antes de una fecha
     @Query("SELECT e FROM Event e WHERE e.status.name = 'CANCELADO' AND e.updatedAt < :cutoffDate")
     List<Event> findCanceledEventsBefore(@Param("cutoffDate") LocalDateTime cutoffDate);
+
+    // Métodos para recomendaciones
+    @Query("SELECT e FROM Event e WHERE e.mainArtist.id IN :artistIds AND e.startDateTime > :now " +
+           "ORDER BY e.startDateTime ASC")
+    List<Event> findByPrimaryArtistIdInAndStartDateTimeAfterOrderByStartDateTimeAsc(
+            @Param("artistIds") List<Long> artistIds, 
+            @Param("now") LocalDateTime now, 
+            Pageable pageable);
+
+    @Query("SELECT e FROM Event e " +
+           "JOIN ArtistGenre ag ON ag.artist.id = e.mainArtist.id " +
+           "WHERE ag.genre.name IN :genreNames AND e.startDateTime > :now " +
+           "ORDER BY e.startDateTime ASC")
+    List<Event> findByGenreNamesInAndStartDateTimeAfterOrderByStartDateTimeAsc(
+            @Param("genreNames") List<String> genreNames, 
+            @Param("now") LocalDateTime now, 
+            Pageable pageable);
+
+    @Query("SELECT e FROM Event e " +
+           "LEFT JOIN Ticket t ON t.event.id = e.id AND t.status.name = 'VENDIDA' " +
+           "WHERE e.startDateTime > :now " +
+           "GROUP BY e.id " +
+           "ORDER BY COUNT(t.id) DESC")
+    List<Event> findPopularUpcomingEvents(@Param("now") LocalDateTime now, Pageable pageable);
 }

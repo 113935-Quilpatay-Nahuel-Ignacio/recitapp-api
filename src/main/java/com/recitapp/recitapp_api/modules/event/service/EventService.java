@@ -1,6 +1,7 @@
 package com.recitapp.recitapp_api.modules.event.service;
 
 import com.recitapp.recitapp_api.modules.event.dto.*;
+import com.recitapp.recitapp_api.modules.event.entity.Event;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -147,5 +148,13 @@ public interface EventService {
     boolean existsById(Long id);
 
     boolean isEventSoldOut(Long eventId);
+
+    /**
+     * Convierte una entidad Event a EventDTO
+     *
+     * @param event Entidad Event a convertir
+     * @return EventDTO con la información del evento
+     */
+    EventDTO convertToDTO(Event event);
 
 }

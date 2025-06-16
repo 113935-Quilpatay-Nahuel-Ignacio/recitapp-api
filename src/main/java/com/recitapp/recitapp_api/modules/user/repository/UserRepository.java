@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -22,4 +23,23 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("firstName") String firstName,
             @Param("lastName") String lastName,
             @Param("dni") String dni);
+
+    // Métodos para recomendaciones personalizadas
+    @Query("SELECT af.artist.id FROM ArtistFollower af WHERE af.user.id = :userId")
+    List<Long> findFollowedArtistIds(@Param("userId") Long userId);
+
+    @Query("SELECT DISTINCT ag.genre.name FROM ArtistGenre ag " +
+           "WHERE ag.artist.id IN (" +
+           "    SELECT DISTINCT e.mainArtist.id FROM Event e " +
+           "    JOIN Ticket t ON t.event.id = e.id " +
+           "    WHERE t.user.id = :userId AND e.mainArtist.id IS NOT NULL" +
+           "    UNION " +
+           "    SELECT DISTINCT ea.artist.id FROM EventArtist ea " +
+           "    JOIN Ticket t ON t.event.id = ea.event.id " +
+           "    WHERE t.user.id = :userId" +
+           ")")
+    List<String> findUserPreferredGenres(@Param("userId") Long userId);
+
+    @Query("SELECT DISTINCT t.event.id FROM Ticket t WHERE t.user.id = :userId")
+    List<Long> findUserEventIds(@Param("userId") Long userId);
 }
