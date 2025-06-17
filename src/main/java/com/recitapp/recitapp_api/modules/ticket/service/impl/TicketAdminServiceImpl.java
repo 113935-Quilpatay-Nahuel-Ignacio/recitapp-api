@@ -207,17 +207,50 @@ public class TicketAdminServiceImpl implements TicketAdminService {
     }
 
     /**
-     * Convierte un Ticket a TicketDTO básico
+     * Convierte un Ticket a TicketDTO completo con información del usuario y evento
      */
     private TicketDTO convertTicketToDTO(Ticket ticket) {
         TicketDTO dto = new TicketDTO();
+        
+        // Información básica del ticket
         dto.setId(ticket.getId());
-        dto.setEventId(ticket.getEvent().getId());
-        dto.setEventName(ticket.getEvent().getName());
         dto.setStatus(ticket.getStatus().getName());
-        dto.setSectionName(ticket.getSection().getName());
         dto.setQrCode(ticket.getQrCode());
         dto.setPurchaseDate(ticket.getPurchaseDate());
+        dto.setPrice(ticket.getSalePrice());
+        
+        // Información del evento
+        if (ticket.getEvent() != null) {
+            dto.setEventId(ticket.getEvent().getId());
+            dto.setEventName(ticket.getEvent().getName());
+            dto.setEventDate(ticket.getEvent().getStartDateTime());
+            
+            // Información del recinto
+            if (ticket.getEvent().getVenue() != null) {
+                dto.setVenueName(ticket.getEvent().getVenue().getName());
+            }
+        }
+        
+        // Información de la sección
+        if (ticket.getSection() != null) {
+            dto.setSectionId(ticket.getSection().getId());
+            dto.setSectionName(ticket.getSection().getName());
+        }
+        
+        // Información del usuario comprador
+        if (ticket.getUser() != null) {
+            dto.setUserId(ticket.getUser().getId());
+            dto.setUserEmail(ticket.getUser().getEmail());
+            dto.setUserFirstName(ticket.getUser().getFirstName());
+            dto.setUserLastName(ticket.getUser().getLastName());
+            dto.setUserName(ticket.getUser().getFirstName() + " " + ticket.getUser().getLastName());
+        }
+        
+        // Información del asistente (puede ser diferente al comprador)
+        dto.setAttendeeFirstName(ticket.getAssignedUserFirstName());
+        dto.setAttendeeLastName(ticket.getAssignedUserLastName());
+        dto.setAttendeeDni(ticket.getAssignedUserDni());
+        
         return dto;
     }
 } 

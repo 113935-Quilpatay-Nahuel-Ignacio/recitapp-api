@@ -27,4 +27,11 @@ public class TicketDTO {
     private String attendeeDni;
     private String qrCode;
     private LocalDateTime purchaseDate;
+    
+    // User information (purchaser)
+    private Long userId;
+    private String userName;
+    private String userEmail;
+    private String userFirstName;
+    private String userLastName;
 }
