@@ -128,4 +128,11 @@ public interface EventRepository extends JpaRepository<Event, Long> {
            "GROUP BY e.id " +
            "ORDER BY COUNT(t.id) DESC")
     List<Event> findPopularUpcomingEvents(@Param("now") LocalDateTime now, Pageable pageable);
+
+    @Query("SELECT e FROM Event e WHERE e.venue.id IN :venueIds AND e.startDateTime > :now " +
+           "ORDER BY e.startDateTime ASC")
+    List<Event> findByVenueIdInAndStartDateTimeAfterOrderByStartDateTimeAsc(
+            @Param("venueIds") List<Long> venueIds, 
+            @Param("now") LocalDateTime now, 
+            Pageable pageable);
 }

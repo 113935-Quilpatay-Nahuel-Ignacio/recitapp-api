@@ -1,6 +1,7 @@
 package com.recitapp.recitapp_api.modules.user.controller;
 
 import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
+import com.recitapp.recitapp_api.modules.user.dto.EventRecommendationDTO;
 import com.recitapp.recitapp_api.modules.user.service.UserRecommendationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -63,6 +64,22 @@ public class UserRecommendationController {
             @RequestParam(defaultValue = "10") int limit) {
         
         List<EventDTO> recommendations = userRecommendationService.getSimilarEventRecommendations(userId, limit);
+        return ResponseEntity.ok(recommendations);
+    }
+
+    /**
+     * Obtiene recomendaciones mejoradas con información detallada sobre por qué se recomienda cada evento
+     * 
+     * @param userId ID del usuario
+     * @param limit Límite de recomendaciones (por defecto 20)
+     * @return Lista de recomendaciones mejoradas con detalles
+     */
+    @GetMapping("/events/enhanced")
+    public ResponseEntity<List<EventRecommendationDTO>> getEnhancedEventRecommendations(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "20") int limit) {
+        
+        List<EventRecommendationDTO> recommendations = userRecommendationService.getEnhancedPersonalizedRecommendations(userId, limit);
         return ResponseEntity.ok(recommendations);
     }
 } 

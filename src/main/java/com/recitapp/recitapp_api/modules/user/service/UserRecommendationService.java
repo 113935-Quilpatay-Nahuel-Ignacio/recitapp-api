@@ -1,6 +1,7 @@
 package com.recitapp.recitapp_api.modules.user.service;
 
 import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
+import com.recitapp.recitapp_api.modules.user.dto.EventRecommendationDTO;
 
 import java.util.List;
 
@@ -35,4 +36,13 @@ public interface UserRecommendationService {
      * @return Lista de eventos similares
      */
     List<EventDTO> getSimilarEventRecommendations(Long userId, int limit);
+
+    /**
+     * Genera recomendaciones personalizadas mejoradas con información detallada sobre por qué se recomienda cada evento
+     * 
+     * @param userId ID del usuario
+     * @param limit Límite de recomendaciones
+     * @return Lista de recomendaciones mejoradas con detalles
+     */
+    List<EventRecommendationDTO> getEnhancedPersonalizedRecommendations(Long userId, int limit);
 } 

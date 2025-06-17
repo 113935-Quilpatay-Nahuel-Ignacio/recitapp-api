@@ -42,4 +42,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT DISTINCT t.event.id FROM Ticket t WHERE t.user.id = :userId")
     List<Long> findUserEventIds(@Param("userId") Long userId);
+
+    // Método para obtener IDs de recintos seguidos
+    @Query("SELECT vf.venue.id FROM VenueFollower vf WHERE vf.user.id = :userId")
+    List<Long> findFollowedVenueIds(@Param("userId") Long userId);
+
+    // Método para obtener nombres de artistas seguidos
+    @Query("SELECT af.artist.name FROM ArtistFollower af WHERE af.user.id = :userId")
+    List<String> findFollowedArtistNames(@Param("userId") Long userId);
+
+    // Método para obtener nombres de recintos seguidos
+    @Query("SELECT vf.venue.name FROM VenueFollower vf WHERE vf.user.id = :userId")
+    List<String> findFollowedVenueNames(@Param("userId") Long userId);
 }
