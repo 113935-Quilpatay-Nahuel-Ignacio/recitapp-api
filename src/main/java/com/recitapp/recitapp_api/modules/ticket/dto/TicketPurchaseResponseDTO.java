@@ -20,4 +20,9 @@ public class TicketPurchaseResponseDTO {
     private String paymentMethod;
     private String transactionStatus;
     private List<TicketDTO> tickets;
+    
+    // Wallet information
+    private BigDecimal walletDiscountApplied;
+    private BigDecimal amountAfterWallet;
+    private String walletMessage;
 }

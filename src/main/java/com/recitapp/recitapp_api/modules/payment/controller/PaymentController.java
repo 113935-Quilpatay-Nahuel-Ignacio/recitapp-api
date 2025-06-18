@@ -3,6 +3,11 @@ package com.recitapp.recitapp_api.modules.payment.controller;
 import com.recitapp.recitapp_api.modules.payment.dto.PaymentRequestDTO;
 import com.recitapp.recitapp_api.modules.payment.dto.PaymentResponseDTO;
 import com.recitapp.recitapp_api.modules.payment.service.MercadoPagoService;
+import com.recitapp.recitapp_api.modules.ticket.dto.TicketPurchaseRequestDTO;
+import com.recitapp.recitapp_api.modules.ticket.dto.TicketPurchaseResponseDTO;
+import com.recitapp.recitapp_api.modules.ticket.dto.TicketDTO;
+import com.recitapp.recitapp_api.modules.ticket.service.TicketService;
+import com.recitapp.recitapp_api.modules.transaction.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +22,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
 import java.util.Map;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/payments")
@@ -25,6 +33,8 @@ import java.util.Map;
 public class PaymentController {
 
     private final MercadoPagoService mercadoPagoService;
+    private final TicketService ticketService;
+    private final TransactionService transactionService;
 
     @PostConstruct
     public void init() {
@@ -126,6 +136,109 @@ public class PaymentController {
             log.error("Error processing payment: {}", e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/wallet-purchase")
+    public ResponseEntity<PaymentResponseDTO> processWalletPurchase(@RequestBody PaymentRequestDTO paymentRequest) {
+        try {
+            log.info("Processing wallet purchase for Event ID: {}, User ID: {}", 
+                    paymentRequest.getEventId(), paymentRequest.getUserId());
+            
+            // Build ticket purchase request with wallet payment method
+            TicketPurchaseRequestDTO ticketPurchaseRequest = buildWalletTicketPurchaseRequest(paymentRequest);
+            
+            // Process purchase with automatic wallet discount
+            TicketPurchaseResponseDTO purchaseResponse = ticketService.purchaseTickets(ticketPurchaseRequest);
+            
+            // Note: PDF generation and email sending would be handled by the service layer
+            
+            // Build response
+            PaymentResponseDTO.BricksConfiguration bricksConfig = PaymentResponseDTO.BricksConfiguration.builder()
+                .locale("es-AR")
+                .theme("default")
+                .paymentMethods(PaymentResponseDTO.PaymentMethods.builder()
+                    .creditCard(false)
+                    .debitCard(false)
+                    .mercadoPagoWallet(false)
+                    .cash(false)
+                    .bankTransfer(false)
+                    .build())
+                .build();
+            
+            String status = purchaseResponse.getAmountAfterWallet().compareTo(BigDecimal.ZERO) == 0 ? 
+                "COMPLETED" : "PARTIAL_WALLET_PAYMENT";
+            
+            return ResponseEntity.ok(PaymentResponseDTO.builder()
+                .preferenceId("WALLET_" + purchaseResponse.getTransactionId())
+                .initPoint(null)
+                .sandboxInitPoint(null)
+                .publicKey("WALLET_PAYMENT")
+                .totalAmount(paymentRequest.getTotalAmount())
+                .status(status)
+                .qrCodeData(purchaseResponse.getTickets().get(0).getQrCode())
+                .paymentMethodInfo(PaymentResponseDTO.PaymentMethodInfo.builder()
+                    .paymentMethodId("billetera_virtual")
+                    .paymentTypeId("wallet")
+                    .paymentMethodName("Billetera Virtual Recitapp")
+                    .issuerName("RecitApp")
+                    .build())
+                .bricksConfig(bricksConfig)
+                .walletDiscountApplied(purchaseResponse.getWalletDiscountApplied())
+                .amountAfterWallet(purchaseResponse.getAmountAfterWallet())
+                .walletMessage(purchaseResponse.getWalletMessage())
+                .build());
+            
+        } catch (Exception e) {
+            log.error("Error processing wallet purchase: {}", e.getMessage(), e);
+            throw new RuntimeException("Error processing wallet payment", e);
+        }
+    }
+    
+    private TicketPurchaseRequestDTO buildWalletTicketPurchaseRequest(PaymentRequestDTO paymentRequest) {
+        log.info("Building wallet ticket purchase request from payment request");
+        
+        // Get wallet payment method ID dynamically
+        Long walletPaymentMethodId = getWalletPaymentMethodId();
+        
+        List<TicketPurchaseRequestDTO.TicketRequestDTO> ticketRequests = new ArrayList<>();
+        
+        for (PaymentRequestDTO.TicketItemDTO ticketItem : paymentRequest.getTickets()) {
+            // Create an entry for each requested quantity
+            for (int i = 0; i < ticketItem.getQuantity(); i++) {
+                TicketPurchaseRequestDTO.TicketRequestDTO ticketRequest = new TicketPurchaseRequestDTO.TicketRequestDTO();
+                ticketRequest.setSectionId(ticketItem.getSectionId());
+                ticketRequest.setAttendeeFirstName(ticketItem.getAttendeeFirstName());
+                ticketRequest.setAttendeeLastName(ticketItem.getAttendeeLastName());
+                ticketRequest.setAttendeeDni(ticketItem.getAttendeeDni());
+                ticketRequest.setPrice(ticketItem.getPrice());
+                
+                ticketRequests.add(ticketRequest);
+            }
+        }
+        
+        return TicketPurchaseRequestDTO.builder()
+            .eventId(paymentRequest.getEventId())
+            .paymentMethodId(walletPaymentMethodId)
+            .userId(paymentRequest.getUserId())
+            .tickets(ticketRequests)
+            .build();
+    }
+    
+    private Long getWalletPaymentMethodId() {
+        try {
+            // Get all active payment methods and find Wallet
+            var paymentMethods = transactionService.getPaymentMethods(false);
+            return paymentMethods.stream()
+                .filter(pm -> "BILLETERA_VIRTUAL".equalsIgnoreCase(pm.getName()))
+                .findFirst()
+                .map(pm -> pm.getId())
+                .orElseThrow(() -> new RuntimeException("Wallet payment method not found"));
+        } catch (Exception e) {
+            log.error("Error getting Wallet payment method ID: {}", e.getMessage());
+            // Fallback to the actual wallet payment method ID from data.sql
+            log.warn("Using fallback payment method ID for wallet. Please check your payment_methods table.");
+            return 4L; // From data.sql: BILLETERA_VIRTUAL has ID 4
         }
     }
 } 

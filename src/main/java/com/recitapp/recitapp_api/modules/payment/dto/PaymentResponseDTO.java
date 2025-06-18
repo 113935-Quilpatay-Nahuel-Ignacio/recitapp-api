@@ -24,6 +24,11 @@ public class PaymentResponseDTO {
     private Long transactionId;
     private String qrCodeData;
     
+    // Wallet information
+    private BigDecimal walletDiscountApplied;
+    private BigDecimal amountAfterWallet;
+    private String walletMessage;
+    
     // Información del método de pago
     private PaymentMethodInfo paymentMethodInfo;
     

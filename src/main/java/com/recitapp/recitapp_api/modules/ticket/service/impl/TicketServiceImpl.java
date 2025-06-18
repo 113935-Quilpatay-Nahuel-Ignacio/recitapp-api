@@ -91,15 +91,63 @@ public class TicketServiceImpl implements TicketService {
         TransactionStatus completedStatus = transactionStatusRepository.findByName("COMPLETADA")
                 .orElseThrow(() -> new EntityNotFoundException("Transaction status 'COMPLETADA' not found"));
 
-        // Create transaction
+        // Calculate total amount
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (TicketPurchaseRequestDTO.TicketRequestDTO ticketRequest : purchaseRequest.getTickets()) {
+            totalAmount = totalAmount.add(ticketRequest.getPrice());
+        }
+
+        // Process wallet balance if user has available funds
+        BigDecimal walletDiscount = BigDecimal.ZERO;
+        BigDecimal amountAfterWallet = totalAmount;
+        String transactionDescription = "Compra de " + purchaseRequest.getTickets().size() + " entrada(s) para " + event.getName();
+        
+        if (user.getWalletBalance() != null && user.getWalletBalance() > 0) {
+            BigDecimal availableWalletBalance = BigDecimal.valueOf(user.getWalletBalance());
+            
+            if (availableWalletBalance.compareTo(totalAmount) >= 0) {
+                // Wallet balance covers the entire purchase
+                walletDiscount = totalAmount;
+                amountAfterWallet = BigDecimal.ZERO;
+                transactionDescription += " - Pagado completamente con billetera virtual";
+                
+                // Update user wallet balance
+                user.setWalletBalance(user.getWalletBalance() - totalAmount.doubleValue());
+                
+            } else {
+                // Wallet balance covers part of the purchase
+                walletDiscount = availableWalletBalance;
+                amountAfterWallet = totalAmount.subtract(availableWalletBalance);
+                transactionDescription += " - Descuento de billetera virtual: " + 
+                    availableWalletBalance.toString() + " ARS";
+                
+                // Empty user wallet balance
+                user.setWalletBalance(0.0);
+            }
+            
+            // Save updated user wallet balance
+            userRepository.save(user);
+            
+            // Log wallet transaction if discount was applied
+            if (walletDiscount.compareTo(BigDecimal.ZERO) > 0) {
+                log.info("Applied wallet discount of {} ARS for user {} in purchase. Remaining amount: {} ARS", 
+                    walletDiscount, user.getId(), amountAfterWallet);
+            }
+        }
+
+        // Create transaction (always create one transaction, even if partially paid with wallet)
         Transaction transaction = new Transaction();
         transaction.setUser(user);
         transaction.setPaymentMethod(paymentMethod);
         transaction.setStatus(completedStatus);
         transaction.setTransactionDate(LocalDateTime.now());
         transaction.setIsRefund(false);
+        transaction.setTotalAmount(totalAmount);
+        transaction.setDescription(transactionDescription);
 
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        // Save transaction first to get the ID
+        transaction = transactionRepository.save(transaction);
+
         List<Ticket> tickets = new ArrayList<>();
 
         // Process each ticket
@@ -149,12 +197,7 @@ public class TicketServiceImpl implements TicketService {
             ticket.setQrCode(qrCode);
 
             tickets.add(ticket);
-            totalAmount = totalAmount.add(ticketRequest.getPrice());
         }
-
-        // Set transaction total amount
-        transaction.setTotalAmount(totalAmount);
-        Transaction savedTransaction = transactionRepository.save(transaction);
 
         // Save tickets
         List<Ticket> savedTickets = ticketRepository.saveAll(tickets);
@@ -164,10 +207,10 @@ public class TicketServiceImpl implements TicketService {
         for (Ticket ticket : savedTickets) {
             TransactionDetail detail = new TransactionDetail();
             TransactionDetail.TransactionDetailId detailId = new TransactionDetail.TransactionDetailId();
-            detailId.setTransactionId(savedTransaction.getId());
+            detailId.setTransactionId(transaction.getId());
             detailId.setTicketId(ticket.getId());
             detail.setId(detailId);
-            detail.setTransaction(savedTransaction);
+            detail.setTransaction(transaction);
             detail.setTicket(ticket);
             detail.setUnitPrice(ticket.getSalePrice());
             details.add(detail);
@@ -178,13 +221,25 @@ public class TicketServiceImpl implements TicketService {
         checkAndUpdateEventStatus(event.getId());
 
         // Map to response DTO
+        String walletMessage = null;
+        if (walletDiscount.compareTo(BigDecimal.ZERO) > 0) {
+            if (amountAfterWallet.compareTo(BigDecimal.ZERO) == 0) {
+                walletMessage = "Compra pagada completamente con billetera virtual";
+            } else {
+                walletMessage = "Se aplicó descuento de billetera virtual por " + walletDiscount + " ARS";
+            }
+        }
+        
         return TicketPurchaseResponseDTO.builder()
-                .transactionId(savedTransaction.getId())
-                .purchaseDate(savedTransaction.getTransactionDate())
-                .totalAmount(savedTransaction.getTotalAmount())
+                .transactionId(transaction.getId())
+                .purchaseDate(transaction.getTransactionDate())
+                .totalAmount(transaction.getTotalAmount())
                 .paymentMethod(paymentMethod.getName())
                 .transactionStatus(completedStatus.getName())
                 .tickets(savedTickets.stream().map(this::mapToTicketDTO).collect(Collectors.toList()))
+                .walletDiscountApplied(walletDiscount)
+                .amountAfterWallet(amountAfterWallet)
+                .walletMessage(walletMessage)
                 .build();
     }
 
