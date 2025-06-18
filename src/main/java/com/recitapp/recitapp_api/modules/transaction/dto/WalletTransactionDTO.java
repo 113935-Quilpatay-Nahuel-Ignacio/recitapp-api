@@ -16,4 +16,5 @@ public class WalletTransactionDTO {
     private BigDecimal amount;
     private String operation; // "ADD" or "SUBTRACT"
     private String description;
+    private String currency;
 }

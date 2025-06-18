@@ -717,4 +717,41 @@ public class TransactionServiceImpl implements TransactionService {
                 .active(paymentMethod.getActive())
                 .build();
     }
+
+    // MercadoPago webhook integration methods
+
+    @Override
+    @Transactional(readOnly = true)
+    public TransactionDTO findByExternalReference(String externalReference) {
+        log.info("Finding transaction by external reference: {}", externalReference);
+        
+        Optional<Transaction> transaction = transactionRepository.findByExternalReference(externalReference);
+        
+        if (transaction.isPresent()) {
+            log.info("Found transaction with ID: {} for external reference: {}", 
+                    transaction.get().getId(), externalReference);
+            return mapToDTO(transaction.get());
+        } else {
+            log.warn("No transaction found for external reference: {}", externalReference);
+            return null;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateExternalReference(Long transactionId, String newExternalReference) {
+        log.info("Updating external reference for transaction ID: {} to: {}", transactionId, newExternalReference);
+        
+        Transaction transaction = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new EntityNotFoundException("Transaction not found with ID: " + transactionId));
+        
+        String oldExternalReference = transaction.getExternalReference();
+        transaction.setExternalReference(newExternalReference);
+        transaction.setUpdatedAt(LocalDateTime.now());
+        
+        transactionRepository.save(transaction);
+        
+        log.info("Successfully updated external reference for transaction ID: {} from '{}' to '{}'", 
+                transactionId, oldExternalReference, newExternalReference);
+    }
 }

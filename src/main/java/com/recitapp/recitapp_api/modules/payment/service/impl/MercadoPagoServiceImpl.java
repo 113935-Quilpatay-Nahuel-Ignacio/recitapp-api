@@ -278,12 +278,23 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                     String paymentTypeId = payment.getPaymentTypeId();
                     String paymentMethodName = getPaymentMethodName(paymentMethodId);
                     String issuerName = payment.getIssuerId() != null ? payment.getIssuerId() : null;
+                    String externalReference = payment.getExternalReference();
+                    String paymentStatus = payment.getStatus();
                     
-                    log.info("Payment method details - Method: {}, Type: {}, Name: {}, Issuer: {}", 
-                            paymentMethodId, paymentTypeId, paymentMethodName, issuerName);
-                            
-                    // Aquí podrías actualizar tu base de datos con esta información
-                    // updatePaymentMethodInDatabase(dataId, paymentMethodId, paymentTypeId, paymentMethodName, issuerName);
+                    log.info("Payment method details - Method: {}, Type: {}, Name: {}, Issuer: {}, Status: {}, External Reference: {}", 
+                            paymentMethodId, paymentTypeId, paymentMethodName, issuerName, paymentStatus, externalReference);
+                    
+                    // Actualizar la transacción con el payment ID real de MercadoPago
+                    if (externalReference != null && "approved".equals(paymentStatus)) {
+                        log.info("Updating transaction with MercadoPago payment ID: {} for external reference: {}", dataId, externalReference);
+                        boolean updated = updateTransactionWithPaymentId(externalReference, dataId, paymentMethodName);
+                        
+                        if (updated) {
+                            log.info("Transaction successfully updated with MercadoPago payment ID: {}", dataId);
+                        } else {
+                            log.warn("Could not find transaction with external reference: {} to update with payment ID: {}", externalReference, dataId);
+                        }
+                    }
                     
                 } catch (MPException | MPApiException e) {
                     log.error("Error getting payment details: {}", e.getMessage());
@@ -293,6 +304,33 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
         } catch (Exception e) {
             log.error("Error processing webhook: {}", e.getMessage(), e);
             throw new RuntimeException("Error processing webhook notification", e);
+        }
+    }
+
+    /**
+     * Updates the transaction with the real MercadoPago payment ID received from webhook
+     */
+    private boolean updateTransactionWithPaymentId(String externalReference, String paymentId, String paymentMethodName) {
+        try {
+            // Find transaction by external reference
+            TransactionDTO transaction = transactionService.findByExternalReference(externalReference);
+            
+            if (transaction != null) {
+                // Update transaction with MercadoPago payment ID
+                // We'll store it in a way that extractMercadoPagoPaymentId can find it
+                // Option 1: Store in external reference as "ORIGINAL_REF|MP_PAYMENT_ID"
+                String updatedExternalRef = externalReference + "|" + paymentId;
+                transactionService.updateExternalReference(transaction.getId(), updatedExternalRef);
+                
+                log.info("Updated transaction {} with MercadoPago payment ID: {}", transaction.getId(), paymentId);
+                return true;
+            }
+            
+            return false;
+            
+        } catch (Exception e) {
+            log.error("Error updating transaction with payment ID: {}", e.getMessage(), e);
+            return false;
         }
     }
 

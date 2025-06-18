@@ -39,4 +39,7 @@ public interface TransactionService {
 
     TransactionStatisticsDTO generateTransactionStatistics(TransactionReportDTO reportDTO);
 
+    // MercadoPago webhook integration methods
+    TransactionDTO findByExternalReference(String externalReference);
+    void updateExternalReference(Long transactionId, String newExternalReference);
 }

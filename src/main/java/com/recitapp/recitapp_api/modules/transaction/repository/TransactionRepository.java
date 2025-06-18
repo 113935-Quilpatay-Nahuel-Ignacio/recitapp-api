@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
@@ -28,4 +29,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     @Query("SELECT COUNT(t) FROM Transaction t WHERE t.paymentMethod.id = :paymentMethodId")
     long countByPaymentMethodId(@Param("paymentMethodId") Long paymentMethodId);
+
+    // MercadoPago webhook integration
+    Optional<Transaction> findByExternalReference(String externalReference);
 }

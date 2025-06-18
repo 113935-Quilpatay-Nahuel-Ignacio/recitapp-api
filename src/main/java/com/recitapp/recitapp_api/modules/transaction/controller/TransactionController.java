@@ -3,6 +3,7 @@ package com.recitapp.recitapp_api.modules.transaction.controller;
 import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.transaction.dto.*;
 import com.recitapp.recitapp_api.modules.transaction.service.TransactionService;
+import com.recitapp.recitapp_api.modules.transaction.service.EnhancedRefundService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -21,6 +22,7 @@ import java.util.List;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final EnhancedRefundService enhancedRefundService;
 
     // RAPP113935-97: Register payment transaction
     @PostMapping
@@ -71,6 +73,14 @@ public class TransactionController {
     public ResponseEntity<TransactionDTO> processRefund(@RequestBody RefundRequestDTO refundRequest) {
         TransactionDTO refundTransaction = transactionService.processRefund(refundRequest);
         return ResponseEntity.ok(refundTransaction);
+    }
+
+    // Enhanced refund with MercadoPago integration and wallet fallback
+    @PostMapping("/refund/enhanced")
+    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
+    public ResponseEntity<EnhancedRefundResponseDTO> processEnhancedRefund(@RequestBody EnhancedRefundRequestDTO refundRequest) {
+        EnhancedRefundResponseDTO refundResponse = enhancedRefundService.processEnhancedRefund(refundRequest);
+        return ResponseEntity.ok(refundResponse);
     }
 
     // Get transaction by ID
