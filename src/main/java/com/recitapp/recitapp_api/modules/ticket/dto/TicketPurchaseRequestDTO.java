@@ -43,9 +43,8 @@ public class TicketPurchaseRequestDTO {
         @NotNull(message = "El DNI del asistente es obligatorio")
         private String attendeeDni;
 
-        @NotNull(message = "El precio del ticket es obligatorio")
         @Min(value = 0, message = "El precio no puede ser negativo")
-        private java.math.BigDecimal price;
+        private java.math.BigDecimal price; // Null para entradas de regalo
 
         private Long promotionId;
     }

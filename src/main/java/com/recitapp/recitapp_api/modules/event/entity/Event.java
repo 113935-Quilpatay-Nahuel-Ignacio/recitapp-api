@@ -48,6 +48,9 @@ public class Event {
     @Column(name = "flyer_image", length = 2000)
     private String flyerImage;
 
+    @Column(name = "sections_image", length = 2000)
+    private String sectionsImage;
+
     @ManyToOne
     @JoinColumn(name = "registrar_id")
     private User registrar;

@@ -91,10 +91,14 @@ public class TicketServiceImpl implements TicketService {
         TransactionStatus completedStatus = transactionStatusRepository.findByName("COMPLETADA")
                 .orElseThrow(() -> new EntityNotFoundException("Transaction status 'COMPLETADA' not found"));
 
-        // Calculate total amount
+        // Calculate total amount (excluding null prices for gift tickets)
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (TicketPurchaseRequestDTO.TicketRequestDTO ticketRequest : purchaseRequest.getTickets()) {
-            totalAmount = totalAmount.add(ticketRequest.getPrice());
+            BigDecimal ticketPrice = ticketRequest.getPrice();
+            if (ticketPrice != null) {
+                totalAmount = totalAmount.add(ticketPrice);
+            }
+            // Gift tickets (null price) don't contribute to total amount
         }
 
         // Process wallet balance if user has available funds
@@ -102,7 +106,38 @@ public class TicketServiceImpl implements TicketService {
         BigDecimal amountAfterWallet = totalAmount;
         String transactionDescription = "Compra de " + purchaseRequest.getTickets().size() + " entrada(s) para " + event.getName();
         
-        if (user.getWalletBalance() != null && user.getWalletBalance() > 0) {
+        // Check if this is a MercadoPago payment
+        boolean isMercadoPagoPayment = paymentMethod.getName().equals("MERCADOPAGO");
+        
+        if (isMercadoPagoPayment) {
+            // For MercadoPago payments, check if wallet discount should be applied
+            // This happens when the frontend calculated a wallet discount and reduced the payment amount
+            BigDecimal userWalletBalance = user.getWalletBalance() != null ? BigDecimal.valueOf(user.getWalletBalance()) : BigDecimal.ZERO;
+            
+            // If user has wallet balance and total amount suggests a discount was applied
+            if (userWalletBalance.compareTo(BigDecimal.ZERO) > 0) {
+                // Calculate the potential wallet discount that was applied in frontend
+                BigDecimal potentialWalletDiscount = userWalletBalance.min(totalAmount);
+                
+                // Apply wallet discount for MercadoPago payments
+                walletDiscount = potentialWalletDiscount;
+                amountAfterWallet = totalAmount.subtract(walletDiscount);
+                
+                // Update user wallet balance
+                user.setWalletBalance(user.getWalletBalance() - walletDiscount.doubleValue());
+                userRepository.save(user);
+                
+                transactionDescription += " - Pago MercadoPago con descuento de billetera virtual: " + walletDiscount + " ARS";
+                
+                log.info("Applied wallet discount of {} ARS for MercadoPago payment by user {}. Amount after wallet: {} ARS", 
+                    walletDiscount, user.getId(), amountAfterWallet);
+            } else {
+                transactionDescription += " - Pago procesado con MercadoPago";
+                log.info("MercadoPago payment processed without wallet discount for user {}", user.getId());
+            }
+            
+        } else if (user.getWalletBalance() != null && user.getWalletBalance() > 0) {
+            // For non-MercadoPago payments, apply wallet discount normally
             BigDecimal availableWalletBalance = BigDecimal.valueOf(user.getWalletBalance());
             
             if (availableWalletBalance.compareTo(totalAmount) >= 0) {
@@ -173,14 +208,18 @@ public class TicketServiceImpl implements TicketService {
             ticket.setEvent(event);
             ticket.setSection(section);
             ticket.setStatus(soldStatus);
-            ticket.setSalePrice(ticketRequest.getPrice());
+            ticket.setSalePrice(ticketRequest.getPrice()); // Puede ser null para entradas de regalo
             ticket.setIdentificationCode(generateUniqueTicketCode());
             ticket.setUser(user);
             ticket.setAssignedUserFirstName(ticketRequest.getAttendeeFirstName());
             ticket.setAssignedUserLastName(ticketRequest.getAttendeeLastName());
             ticket.setAssignedUserDni(ticketRequest.getAttendeeDni());
             ticket.setPurchaseDate(LocalDateTime.now());
-            ticket.setIsGift(false);
+            
+            // Detectar si es entrada de regalo (precio null)
+            boolean isGiftTicket = (ticketRequest.getPrice() == null);
+            ticket.setIsGift(isGiftTicket);
+            
             ticket.setRegistrationDate(LocalDateTime.now());
             ticket.setUpdatedAt(LocalDateTime.now());
 
@@ -212,7 +251,13 @@ public class TicketServiceImpl implements TicketService {
             detail.setId(detailId);
             detail.setTransaction(transaction);
             detail.setTicket(ticket);
-            detail.setUnitPrice(ticket.getSalePrice());
+            
+            // Para entradas de regalo, usar BigDecimal.ZERO en lugar de null
+            BigDecimal unitPrice = ticket.getSalePrice();
+            if (unitPrice == null && ticket.getIsGift()) {
+                unitPrice = BigDecimal.ZERO;
+            }
+            detail.setUnitPrice(unitPrice);
             details.add(detail);
         }
         transactionDetailRepository.saveAll(details);

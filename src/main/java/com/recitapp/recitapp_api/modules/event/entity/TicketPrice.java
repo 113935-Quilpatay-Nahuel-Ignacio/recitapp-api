@@ -30,7 +30,7 @@ public class TicketPrice {
     @Column(name = "ticket_type", length = 50, nullable = false)
     private String ticketType;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(nullable = true, precision = 10, scale = 2)
     private BigDecimal price;
 
     @Column(name = "available_quantity", nullable = false)

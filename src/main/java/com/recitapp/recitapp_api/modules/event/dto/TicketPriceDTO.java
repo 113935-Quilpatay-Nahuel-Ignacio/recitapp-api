@@ -24,7 +24,6 @@ public class TicketPriceDTO {
     @Size(max = 50, message = "El tipo de ticket no puede exceder 50 caracteres")
     private String ticketType;
 
-    @NotNull(message = "El precio es obligatorio")
     @DecimalMin(value = "0.0", inclusive = true, message = "El precio no puede ser negativo")
     private BigDecimal price;
 

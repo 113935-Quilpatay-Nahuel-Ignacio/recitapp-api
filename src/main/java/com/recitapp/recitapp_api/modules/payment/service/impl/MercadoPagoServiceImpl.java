@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -75,13 +76,48 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                 throw new IllegalArgumentException("No tickets provided in payment request");
             }
             
-            // Crear items de la preferencia
-            List<PreferenceItemRequest> items = paymentRequest.getTickets().stream()
+            // Separar entradas de pago de entradas gratuitas
+            List<PaymentRequestDTO.TicketItemDTO> paidTickets = paymentRequest.getTickets().stream()
+                .filter(ticket -> ticket.getPrice() != null && ticket.getPrice().compareTo(BigDecimal.ZERO) > 0)
+                .collect(Collectors.toList());
+                
+            List<PaymentRequestDTO.TicketItemDTO> giftTickets = paymentRequest.getTickets().stream()
+                .filter(ticket -> ticket.getPrice() == null || ticket.getPrice().compareTo(BigDecimal.ZERO) <= 0)
+                .collect(Collectors.toList());
+                
+            log.info("Processing {} paid tickets and {} gift tickets", paidTickets.size(), giftTickets.size());
+            
+            // Si solo hay entradas gratuitas, no crear preferencia de MercadoPago
+            if (paidTickets.isEmpty()) {
+                log.info("Only gift tickets found, processing without MercadoPago");
+                return processGiftTicketsOnly(paymentRequest);
+            }
+            
+            // Calcular descuento proporcional si aplica
+            BigDecimal originalPaidTotal = paidTickets.stream()
+                .map(ticket -> ticket.getPrice().multiply(BigDecimal.valueOf(ticket.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                
+            BigDecimal requestedAmount = paymentRequest.getTotalAmount();
+            BigDecimal discountRatio = BigDecimal.ONE;
+            
+            if (originalPaidTotal.compareTo(requestedAmount) > 0 && requestedAmount.compareTo(BigDecimal.ZERO) > 0) {
+                // Hay un descuento aplicado (probablemente billetera virtual)
+                discountRatio = requestedAmount.divide(originalPaidTotal, 4, RoundingMode.HALF_UP);
+                log.info("Wallet discount detected. Original total: {}, Requested amount: {}, Discount ratio: {}", 
+                    originalPaidTotal, requestedAmount, discountRatio);
+            }
+            
+            final BigDecimal finalDiscountRatio = discountRatio;
+            
+            // Crear items de la preferencia solo para entradas de pago
+            List<PreferenceItemRequest> items = paidTickets.stream()
                 .map((PaymentRequestDTO.TicketItemDTO ticket) -> {
                     log.debug("Creating item for ticket: type={}, price={}, quantity={}", 
                             ticket.getTicketType(), ticket.getPrice(), ticket.getQuantity());
                     
-                    // Validaciones de los items
+                    // Las validaciones ya no son necesarias porque filtramos arriba
+                    // pero las mantenemos por seguridad
                     if (ticket.getPrice() == null || ticket.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
                         throw new IllegalArgumentException("Ticket price must be greater than 0");
                     }
@@ -106,6 +142,14 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                         itemDescription = itemDescription.substring(0, 597) + "...";
                     }
                     
+                    // Aplicar descuento proporcional al precio del item si es necesario
+                    BigDecimal adjustedPrice = ticket.getPrice().multiply(finalDiscountRatio);
+                    // Redondear a 2 decimales para evitar problemas con centavos
+                    adjustedPrice = adjustedPrice.setScale(2, RoundingMode.HALF_UP);
+                    
+                    log.debug("Item price adjustment: original={}, adjusted={}, ratio={}", 
+                        ticket.getPrice(), adjustedPrice, finalDiscountRatio);
+                    
                     return PreferenceItemRequest.builder()
                         .id(String.valueOf(ticket.getTicketPriceId() != null ? ticket.getTicketPriceId() : "1"))
                         .title(itemTitle)
@@ -114,7 +158,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                         .categoryId("tickets")
                         .quantity(ticket.getQuantity())
                         .currencyId("ARS")
-                        .unitPrice(new BigDecimal(ticket.getPrice().toString()))
+                        .unitPrice(adjustedPrice) // Usar precio ajustado con descuento proporcional
                         .build();
                 })
                 .collect(Collectors.toList());
@@ -193,6 +237,45 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                     .build())
                 .build();
 
+            // Calcular el total final de la preferencia
+            BigDecimal calculatedTotal = items.stream()
+                .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+            // Verificar si hay diferencia de redondeo y ajustar el último item si es necesario
+            BigDecimal difference = requestedAmount.subtract(calculatedTotal);
+            BigDecimal finalPreferenceAmount = calculatedTotal;
+            
+            if (difference.abs().compareTo(new BigDecimal("0.10")) <= 0 && !items.isEmpty()) {
+                // Si hay una pequeña diferencia (≤ 10 centavos), ajustar el último item
+                PreferenceItemRequest lastItem = items.get(items.size() - 1);
+                BigDecimal adjustedPrice = lastItem.getUnitPrice().add(difference);
+                
+                // Recrear el último item con precio ajustado
+                items.set(items.size() - 1, PreferenceItemRequest.builder()
+                    .id(lastItem.getId())
+                    .title(lastItem.getTitle())
+                    .description(lastItem.getDescription())
+                    .pictureUrl(lastItem.getPictureUrl())
+                    .categoryId(lastItem.getCategoryId())
+                    .quantity(lastItem.getQuantity())
+                    .currencyId(lastItem.getCurrencyId())
+                    .unitPrice(adjustedPrice.setScale(2, RoundingMode.HALF_UP))
+                    .build());
+                    
+                finalPreferenceAmount = requestedAmount;
+                log.debug("Adjusted last item price by {} to match requested amount exactly", difference);
+            }
+                
+            log.info("MercadoPago preference created. Original paid total: {}, Requested amount: {}, Final preference amount: {}, Gift tickets count: {}", 
+                    originalPaidTotal, requestedAmount, finalPreferenceAmount, giftTickets.size());
+                    
+            // Si hay entradas gratuitas junto con las de pago, se procesarán después del pago
+            if (!giftTickets.isEmpty()) {
+                log.info("Mixed payment detected: {} paid tickets and {} gift tickets will be processed after payment", 
+                        paidTickets.size(), giftTickets.size());
+            }
+
             return PaymentResponseDTO.builder()
                 // Campos para Checkout Pro (compatibilidad)
                 .preferenceId(preference.getId())
@@ -200,7 +283,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                 .sandboxInitPoint(preference.getSandboxInitPoint())
                 // Campos para Checkout Bricks
                 .publicKey(publicKey)
-                .totalAmount(paymentRequest.getTotalAmount())
+                .totalAmount(finalPreferenceAmount) // Usar el total de la preferencia (con descuentos aplicados proporcionalmente)
                 .status("CREATED")
                 .qrCodeData(null)
                 .paymentMethodInfo(PaymentResponseDTO.PaymentMethodInfo.builder()
@@ -512,6 +595,117 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
         } catch (Exception e) {
             log.error("Error sending email for ticket: {}", e.getMessage(), e);
             // No lanzar excepción para no interrumpir el flujo de pago
+        }
+    }
+    
+    /**
+     * Procesa únicamente entradas gratuitas (GIFT) sin usar MercadoPago
+     */
+    private PaymentResponseDTO processGiftTicketsOnly(PaymentRequestDTO paymentRequest) {
+        log.info("Processing gift tickets only (no payment required)");
+        
+        try {
+            // Obtener el método de pago para entradas gratuitas
+            Long giftPaymentMethodId = getGiftPaymentMethodId();
+            
+            // Construir request de compra para entradas gratuitas
+            TicketPurchaseRequestDTO ticketPurchaseRequest = buildTicketPurchaseRequestForGifts(paymentRequest, giftPaymentMethodId);
+            
+            // Procesar la compra directamente
+            TicketPurchaseResponseDTO purchaseResponse = ticketService.purchaseTickets(ticketPurchaseRequest);
+            
+            // Generar PDFs y enviar emails para cada ticket
+            for (TicketDTO ticket : purchaseResponse.getTickets()) {
+                generateTicketPDF(ticket);
+                sendTicketByEmail(ticket, paymentRequest.getPayer().getEmail());
+            }
+            
+            // Configuración para respuesta
+            PaymentResponseDTO.BricksConfiguration bricksConfig = PaymentResponseDTO.BricksConfiguration.builder()
+                .locale("es-AR")
+                .theme("default")
+                .paymentMethods(PaymentResponseDTO.PaymentMethods.builder()
+                    .creditCard(false)
+                    .debitCard(false)
+                    .mercadoPagoWallet(false)
+                    .cash(false)
+                    .bankTransfer(false)
+                    .build())
+                .build();
+            
+            return PaymentResponseDTO.builder()
+                .preferenceId("GIFT_" + purchaseResponse.getTransactionId())
+                .initPoint(null)
+                .sandboxInitPoint(null)
+                .publicKey(publicKey)
+                .totalAmount(BigDecimal.ZERO) // Las entradas de regalo no tienen costo
+                .status("COMPLETED")
+                .qrCodeData(purchaseResponse.getTickets().get(0).getQrCode()) // QR del primer ticket
+                .paymentMethodInfo(PaymentResponseDTO.PaymentMethodInfo.builder()
+                    .paymentMethodId("gift")
+                    .paymentTypeId("gift")
+                    .paymentMethodName("Entrada de Regalo")
+                    .issuerName(null)
+                    .build())
+                .bricksConfig(bricksConfig)
+                .build();
+                
+        } catch (Exception e) {
+            log.error("Error processing gift tickets: {}", e.getMessage(), e);
+            throw new RuntimeException("Error processing gift tickets", e);
+        }
+    }
+    
+    /**
+     * Construye request de compra específicamente para entradas gratuitas
+     */
+    private TicketPurchaseRequestDTO buildTicketPurchaseRequestForGifts(PaymentRequestDTO paymentRequest, Long giftPaymentMethodId) {
+        log.info("Building ticket purchase request for gift tickets");
+        
+        List<TicketPurchaseRequestDTO.TicketRequestDTO> ticketRequests = new ArrayList<>();
+        
+        for (PaymentRequestDTO.TicketItemDTO ticketItem : paymentRequest.getTickets()) {
+            // Solo procesar entradas gratuitas
+            if (ticketItem.getPrice() == null || ticketItem.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                // Crear una entrada por cada cantidad solicitada
+                for (int i = 0; i < ticketItem.getQuantity(); i++) {
+                    TicketPurchaseRequestDTO.TicketRequestDTO ticketRequest = new TicketPurchaseRequestDTO.TicketRequestDTO();
+                    ticketRequest.setSectionId(ticketItem.getSectionId());
+                    ticketRequest.setAttendeeFirstName(ticketItem.getAttendeeFirstName());
+                    ticketRequest.setAttendeeLastName(ticketItem.getAttendeeLastName());
+                    ticketRequest.setAttendeeDni(ticketItem.getAttendeeDni());
+                    ticketRequest.setPrice(BigDecimal.ZERO); // Forzar precio 0 para entradas de regalo
+                    
+                    ticketRequests.add(ticketRequest);
+                }
+            }
+        }
+        
+        return TicketPurchaseRequestDTO.builder()
+            .eventId(paymentRequest.getEventId())
+            .paymentMethodId(giftPaymentMethodId)
+            .userId(paymentRequest.getUserId())
+            .tickets(ticketRequests)
+            .build();
+    }
+    
+    /**
+     * Obtiene el ID del método de pago para entradas gratuitas
+     */
+    private Long getGiftPaymentMethodId() {
+        try {
+            // Buscar el método de pago para entradas gratuitas
+            var paymentMethods = transactionService.getActivePaymentMethods();
+            return paymentMethods.stream()
+                .filter(pm -> "GIFT".equalsIgnoreCase(pm.getName()) || "ENTRADA_REGALO".equalsIgnoreCase(pm.getName()))
+                .findFirst()
+                .map(pm -> pm.getId())
+                .orElseThrow(() -> new RuntimeException("Gift payment method not found"));
+        } catch (Exception e) {
+            log.error("Error getting gift payment method ID: {}", e.getMessage());
+            // Fallback - necesitarás ajustar esto según tu base de datos
+            log.warn("Using fallback gift payment method ID. Please check your payment_methods table.");
+            return 6L; // Ajustar según tu DB real
         }
     }
 } 

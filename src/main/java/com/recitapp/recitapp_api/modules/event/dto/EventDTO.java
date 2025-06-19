@@ -44,6 +44,8 @@ public class EventDTO {
 
     private String flyerImage;
 
+    private String sectionsImage;
+
     // Campos adicionales que faltaban
     private LocalDateTime salesStartDate;
     private LocalDateTime salesEndDate;

@@ -103,6 +103,7 @@ public class EventServiceImpl implements EventService {
         event.setStatus(status);
         event.setRegistrar(registrar);
         event.setFlyerImage(eventDTO.getFlyerImage());
+        event.setSectionsImage(eventDTO.getSectionsImage());
         event.setVerified(false); // Por defecto, el evento no está verificado
         event.setSalesStartDate(eventDTO.getSalesStartDate());
         event.setSalesEndDate(eventDTO.getSalesEndDate());
@@ -169,14 +170,22 @@ public class EventServiceImpl implements EventService {
                 ticketPrice.setEvent(savedEvent);
                 ticketPrice.setSection(section);
                 ticketPrice.setTicketType(ticketPriceDTO.getTicketType());
-                ticketPrice.setPrice(ticketPriceDTO.getPrice());
-                ticketPrice.setAvailableQuantity(ticketPriceDTO.getAvailableQuantity());
                 
-                // Configurar campos promocionales
+                // Configurar campos promocionales antes del precio
+                boolean isGift = ticketPriceDTO.getIsGift() != null ? ticketPriceDTO.getIsGift() : false;
                 ticketPrice.setIsPromotional(ticketPriceDTO.getIsPromotional() != null ? ticketPriceDTO.getIsPromotional() : false);
-                ticketPrice.setIsGift(ticketPriceDTO.getIsGift() != null ? ticketPriceDTO.getIsGift() : false);
+                ticketPrice.setIsGift(isGift);
                 ticketPrice.setPromotionalType(ticketPriceDTO.getPromotionalType());
                 ticketPrice.setSeatsPerTicket(ticketPriceDTO.getSeatsPerTicket() != null ? ticketPriceDTO.getSeatsPerTicket() : 1);
+                
+                // Para entradas de regalo, el precio puede ser null (será 0 o null en BD)
+                if (isGift) {
+                    ticketPrice.setPrice(null); // Entradas de regalo sin precio
+                } else {
+                    ticketPrice.setPrice(ticketPriceDTO.getPrice());
+                }
+                
+                ticketPrice.setAvailableQuantity(ticketPriceDTO.getAvailableQuantity());
 
                 try {
                     ticketPriceRepository.save(ticketPrice);
@@ -237,6 +246,10 @@ public class EventServiceImpl implements EventService {
 
         if (eventDTO.getFlyerImage() != null) {
             event.setFlyerImage(eventDTO.getFlyerImage());
+        }
+
+        if (eventDTO.getSectionsImage() != null) {
+            event.setSectionsImage(eventDTO.getSectionsImage());
         }
 
         if (eventDTO.getSalesStartDate() != null) {
@@ -345,14 +358,22 @@ public class EventServiceImpl implements EventService {
                 ticketPrice.setEvent(updatedEvent);
                 ticketPrice.setSection(section);
                 ticketPrice.setTicketType(ticketPriceDTO.getTicketType());
-                ticketPrice.setPrice(ticketPriceDTO.getPrice());
-                ticketPrice.setAvailableQuantity(ticketPriceDTO.getAvailableQuantity());
                 
-                // Configurar campos promocionales
+                // Configurar campos promocionales antes del precio
+                boolean isGift = ticketPriceDTO.getIsGift() != null ? ticketPriceDTO.getIsGift() : false;
                 ticketPrice.setIsPromotional(ticketPriceDTO.getIsPromotional() != null ? ticketPriceDTO.getIsPromotional() : false);
-                ticketPrice.setIsGift(ticketPriceDTO.getIsGift() != null ? ticketPriceDTO.getIsGift() : false);
+                ticketPrice.setIsGift(isGift);
                 ticketPrice.setPromotionalType(ticketPriceDTO.getPromotionalType());
                 ticketPrice.setSeatsPerTicket(ticketPriceDTO.getSeatsPerTicket() != null ? ticketPriceDTO.getSeatsPerTicket() : 1);
+                
+                // Para entradas de regalo, el precio puede ser null (será 0 o null en BD)
+                if (isGift) {
+                    ticketPrice.setPrice(null); // Entradas de regalo sin precio
+                } else {
+                    ticketPrice.setPrice(ticketPriceDTO.getPrice());
+                }
+                
+                ticketPrice.setAvailableQuantity(ticketPriceDTO.getAvailableQuantity());
 
                 try {
                     ticketPriceRepository.save(ticketPrice);
@@ -741,6 +762,7 @@ public class EventServiceImpl implements EventService {
                 .mainArtistName(event.getMainArtist() != null ? event.getMainArtist().getName() : null)
                 .statusName(event.getStatus().getName())
                 .flyerImage(event.getFlyerImage())
+                .sectionsImage(event.getSectionsImage())
                 .salesStartDate(event.getSalesStartDate())
                 .salesEndDate(event.getSalesEndDate())
                 .verified(event.getVerified())
