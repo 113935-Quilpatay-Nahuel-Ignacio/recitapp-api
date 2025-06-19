@@ -171,6 +171,12 @@ public class EventServiceImpl implements EventService {
                 ticketPrice.setTicketType(ticketPriceDTO.getTicketType());
                 ticketPrice.setPrice(ticketPriceDTO.getPrice());
                 ticketPrice.setAvailableQuantity(ticketPriceDTO.getAvailableQuantity());
+                
+                // Configurar campos promocionales
+                ticketPrice.setIsPromotional(ticketPriceDTO.getIsPromotional() != null ? ticketPriceDTO.getIsPromotional() : false);
+                ticketPrice.setIsGift(ticketPriceDTO.getIsGift() != null ? ticketPriceDTO.getIsGift() : false);
+                ticketPrice.setPromotionalType(ticketPriceDTO.getPromotionalType());
+                ticketPrice.setSeatsPerTicket(ticketPriceDTO.getSeatsPerTicket() != null ? ticketPriceDTO.getSeatsPerTicket() : 1);
 
                 try {
                     ticketPriceRepository.save(ticketPrice);
@@ -341,6 +347,12 @@ public class EventServiceImpl implements EventService {
                 ticketPrice.setTicketType(ticketPriceDTO.getTicketType());
                 ticketPrice.setPrice(ticketPriceDTO.getPrice());
                 ticketPrice.setAvailableQuantity(ticketPriceDTO.getAvailableQuantity());
+                
+                // Configurar campos promocionales
+                ticketPrice.setIsPromotional(ticketPriceDTO.getIsPromotional() != null ? ticketPriceDTO.getIsPromotional() : false);
+                ticketPrice.setIsGift(ticketPriceDTO.getIsGift() != null ? ticketPriceDTO.getIsGift() : false);
+                ticketPrice.setPromotionalType(ticketPriceDTO.getPromotionalType());
+                ticketPrice.setSeatsPerTicket(ticketPriceDTO.getSeatsPerTicket() != null ? ticketPriceDTO.getSeatsPerTicket() : 1);
 
                 try {
                     ticketPriceRepository.save(ticketPrice);
@@ -762,15 +774,21 @@ public class EventServiceImpl implements EventService {
     }
 
     private TicketPriceDTO mapTicketPriceToDTO(TicketPrice ticketPrice) {
-        return TicketPriceDTO.builder()
-                .id(ticketPrice.getId())
-                .sectionId(ticketPrice.getSection().getId())
-                .sectionName(ticketPrice.getSection().getName())
-                .ticketType(ticketPrice.getTicketType())
-                .price(ticketPrice.getPrice())
-                .availableQuantity(ticketPrice.getAvailableQuantity())
-                .eventId(ticketPrice.getEvent().getId())
-                .build();
+        TicketPriceDTO dto = new TicketPriceDTO();
+        dto.setId(ticketPrice.getId());
+        dto.setEventId(ticketPrice.getEvent().getId());
+        dto.setSectionId(ticketPrice.getSection().getId());
+        dto.setTicketType(ticketPrice.getTicketType());
+        dto.setPrice(ticketPrice.getPrice());
+        dto.setAvailableQuantity(ticketPrice.getAvailableQuantity());
+        
+        // Mapear campos promocionales
+        dto.setIsPromotional(ticketPrice.getIsPromotional());
+        dto.setIsGift(ticketPrice.getIsGift());
+        dto.setPromotionalType(ticketPrice.getPromotionalType());
+        dto.setSeatsPerTicket(ticketPrice.getSeatsPerTicket());
+        
+        return dto;
     }
 
     private void validateStatusTransition(String currentStatus, String newStatus) {

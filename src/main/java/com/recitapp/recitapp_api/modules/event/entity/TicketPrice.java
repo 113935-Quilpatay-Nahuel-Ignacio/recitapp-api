@@ -35,4 +35,17 @@ public class TicketPrice {
 
     @Column(name = "available_quantity", nullable = false)
     private Integer availableQuantity;
+    
+    // Nuevos campos para entradas promocionales y de regalo
+    @Column(name = "is_promotional", nullable = false)
+    private Boolean isPromotional = false;
+    
+    @Column(name = "is_gift", nullable = false)
+    private Boolean isGift = false;
+    
+    @Column(name = "promotional_type", length = 20)
+    private String promotionalType; // "2X1", "GIFT", etc.
+    
+    @Column(name = "seats_per_ticket", nullable = false)
+    private Integer seatsPerTicket = 1; // Para 2x1 sería 2, para regalo 1
 }
