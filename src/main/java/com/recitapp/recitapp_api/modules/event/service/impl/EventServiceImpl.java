@@ -446,12 +446,34 @@ public class EventServiceImpl implements EventService {
         }
         detailDTO.setStatusName(event.getStatus().getName());
         detailDTO.setFlyerImage(event.getFlyerImage());
+        detailDTO.setSectionsImage(event.getSectionsImage());
         detailDTO.setVerified(event.getVerified());
         detailDTO.setSalesStartDate(event.getSalesStartDate());
         detailDTO.setSalesEndDate(event.getSalesEndDate());
         detailDTO.setRegistrationDate(event.getRegistrationDate());
         detailDTO.setUpdatedAt(event.getUpdatedAt());
         detailDTO.setArtistIds(artistIds);
+
+        // 🖼️ LOG DETALLADO: Información de imágenes
+        log.info("🖼️ [IMAGE DEBUG] Event ID: {} - Image URLs returned:", eventId);
+        log.info("🖼️ [IMAGE DEBUG] flyerImage: '{}'", event.getFlyerImage());
+        log.info("🖼️ [IMAGE DEBUG] sectionsImage: '{}'", event.getSectionsImage());
+        log.info("🖼️ [IMAGE DEBUG] flyerImage null?: {}", event.getFlyerImage() == null);
+        log.info("🖼️ [IMAGE DEBUG] sectionsImage null?: {}", event.getSectionsImage() == null);
+        if (event.getFlyerImage() != null) {
+            log.info("🖼️ [IMAGE DEBUG] flyerImage length: {}", event.getFlyerImage().length());
+            log.info("🖼️ [IMAGE DEBUG] flyerImage starts with: '{}'", 
+                event.getFlyerImage().length() > 50 ? 
+                event.getFlyerImage().substring(0, 50) + "..." : 
+                event.getFlyerImage());
+        }
+        if (event.getSectionsImage() != null) {
+            log.info("🖼️ [IMAGE DEBUG] sectionsImage length: {}", event.getSectionsImage().length());
+            log.info("🖼️ [IMAGE DEBUG] sectionsImage starts with: '{}'", 
+                event.getSectionsImage().length() > 50 ? 
+                event.getSectionsImage().substring(0, 50) + "..." : 
+                event.getSectionsImage());
+        }
 
         // Estadísticas básicas
         detailDTO.setTotalTickets(ticketRepository.countByEventId(eventId));

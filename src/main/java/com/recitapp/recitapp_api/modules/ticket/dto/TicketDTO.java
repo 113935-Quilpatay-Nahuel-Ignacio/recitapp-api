@@ -34,4 +34,10 @@ public class TicketDTO {
     private String userEmail;
     private String userFirstName;
     private String userLastName;
+    
+    // Promotional information
+    private Boolean isGift;
+    private String promotionName;
+    private String promotionDescription;
+    private String ticketType; // "PROMOTIONAL_2X1", "GENERAL", "GIFT"
 }

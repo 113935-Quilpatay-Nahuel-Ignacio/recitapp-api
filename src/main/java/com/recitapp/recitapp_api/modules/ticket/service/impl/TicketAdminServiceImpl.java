@@ -251,6 +251,44 @@ public class TicketAdminServiceImpl implements TicketAdminService {
         dto.setAttendeeLastName(ticket.getAssignedUserLastName());
         dto.setAttendeeDni(ticket.getAssignedUserDni());
         
+        // Información promocional
+        dto.setIsGift(ticket.getIsGift());
+        dto.setPromotionName(ticket.getPromotion() != null ? ticket.getPromotion().getName() : null);
+        dto.setPromotionDescription(ticket.getPromotion() != null ? ticket.getPromotion().getDescription() : null);
+        dto.setTicketType(determineTicketType(ticket));
+        
         return dto;
+    }
+
+    /**
+     * Determines the ticket type based on promotion and gift status
+     * @param ticket The ticket to analyze
+     * @return The ticket type string
+     */
+    private String determineTicketType(Ticket ticket) {
+        // Check if it's a gift ticket first
+        if (ticket.getIsGift() != null && ticket.getIsGift()) {
+            return "GIFT";
+        }
+        
+        // Check if it has a promotion
+        if (ticket.getPromotion() != null) {
+            String promotionName = ticket.getPromotion().getName();
+            String promotionDescription = ticket.getPromotion().getDescription();
+            
+            // Check for 2x1 promotion (case insensitive)
+            boolean is2x1 = (promotionName != null && promotionName.toLowerCase().contains("2x1")) ||
+                           (promotionDescription != null && promotionDescription.toLowerCase().contains("2x1")) ||
+                           (promotionName != null && promotionName.toLowerCase().contains("dos por uno")) ||
+                           (promotionDescription != null && promotionDescription.toLowerCase().contains("dos por uno"));
+            
+            if (is2x1) {
+                return "PROMOTIONAL_2X1";
+            } else {
+                return "PROMOTIONAL";
+            }
+        }
+        
+        return "GENERAL";
     }
 } 

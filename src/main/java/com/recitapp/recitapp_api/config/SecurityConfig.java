@@ -55,6 +55,9 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/favicon.ico").permitAll()
+                        // Static file access - uploads directory
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
                         
                         // Endpoints con roles específicos
                         .requestMatchers("/admin/**").hasRole("ADMIN")

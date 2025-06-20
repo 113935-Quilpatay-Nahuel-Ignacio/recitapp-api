@@ -27,6 +27,7 @@ public class EventDetailDTO {
     private String mainArtistName;
     private String statusName;
     private String flyerImage;
+    private String sectionsImage;
 
     private Boolean verified;
     private LocalDateTime salesStartDate;

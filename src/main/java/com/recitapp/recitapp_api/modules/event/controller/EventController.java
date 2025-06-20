@@ -1,6 +1,7 @@
 package com.recitapp.recitapp_api.modules.event.controller;
 
 import com.recitapp.recitapp_api.annotation.RequireRole;
+import com.recitapp.recitapp_api.modules.common.service.FileStorageService;
 import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
 import com.recitapp.recitapp_api.modules.event.dto.EventDetailDTO;
 import com.recitapp.recitapp_api.modules.event.dto.EventFilterDTO;
@@ -11,6 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
@@ -22,6 +24,7 @@ import java.util.List;
 public class EventController {
 
     private final EventService eventService;
+    private final FileStorageService fileStorageService;
 
     @PostMapping
     @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
@@ -29,6 +32,26 @@ public class EventController {
                                                 @RequestParam Long registrarId) {
         EventDTO createdEvent = eventService.createEvent(eventDTO, registrarId);
         return new ResponseEntity<>(createdEvent, HttpStatus.CREATED);
+    }
+
+    @PostMapping("/with-files")
+    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
+    public ResponseEntity<EventDTO> createEventWithFiles(
+            @RequestParam("eventData") String eventDataJson,
+            @RequestParam("registrarId") Long registrarId,
+            @RequestParam(value = "flyerImage", required = false) MultipartFile flyerImage,
+            @RequestParam(value = "sectionsImage", required = false) MultipartFile sectionsImage) {
+        
+        try {
+            // Aquí implementaremos la lógica para manejar archivos
+            // Por ahora mantenemos compatibilidad con el método existente
+            
+            // TODO: Implementar parsing de JSON y manejo de archivos
+            throw new RuntimeException("Endpoint en desarrollo");
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PutMapping("/{id}")

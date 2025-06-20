@@ -552,7 +552,48 @@ public class TicketServiceImpl implements TicketService {
                 .attendeeDni(ticket.getAssignedUserDni())
                 .qrCode(ticket.getQrCode())
                 .purchaseDate(ticket.getPurchaseDate())
+                .userId(ticket.getUser().getId())
+                .userName(ticket.getUser().getEmail())
+                .userEmail(ticket.getUser().getEmail())
+                .userFirstName(ticket.getUser().getFirstName())
+                .userLastName(ticket.getUser().getLastName())
+                .isGift(ticket.getIsGift())
+                .promotionName(ticket.getPromotion() != null ? ticket.getPromotion().getName() : null)
+                .promotionDescription(ticket.getPromotion() != null ? ticket.getPromotion().getDescription() : null)
+                .ticketType(determineTicketType(ticket))
                 .build();
+    }
+
+    /**
+     * Determines the ticket type based on promotion and gift status
+     * @param ticket The ticket to analyze
+     * @return The ticket type string
+     */
+    private String determineTicketType(Ticket ticket) {
+        // Check if it's a gift ticket first
+        if (ticket.getIsGift() != null && ticket.getIsGift()) {
+            return "GIFT";
+        }
+        
+        // Check if it has a promotion
+        if (ticket.getPromotion() != null) {
+            String promotionName = ticket.getPromotion().getName();
+            String promotionDescription = ticket.getPromotion().getDescription();
+            
+            // Check for 2x1 promotion (case insensitive)
+            boolean is2x1 = (promotionName != null && promotionName.toLowerCase().contains("2x1")) ||
+                           (promotionDescription != null && promotionDescription.toLowerCase().contains("2x1")) ||
+                           (promotionName != null && promotionName.toLowerCase().contains("dos por uno")) ||
+                           (promotionDescription != null && promotionDescription.toLowerCase().contains("dos por uno"));
+            
+            if (is2x1) {
+                return "PROMOTIONAL_2X1";
+            } else {
+                return "PROMOTIONAL";
+            }
+        }
+        
+        return "GENERAL";
     }
 
     private void checkAndUpdateEventStatus(Long eventId) {
