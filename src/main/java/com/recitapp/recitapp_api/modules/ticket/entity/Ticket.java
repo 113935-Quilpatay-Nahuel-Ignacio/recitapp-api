@@ -70,6 +70,9 @@ public class Ticket {
     @Column(name = "is_gift")
     private Boolean isGift;
 
+    @Column(name = "ticket_type", length = 50)
+    private String ticketType; // "GENERAL", "PROMOTIONAL_2X1", "GIFT", "VIP"
+
     @Column(name = "registration_date")
     private LocalDateTime registrationDate;
 

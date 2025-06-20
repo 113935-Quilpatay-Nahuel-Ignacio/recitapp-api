@@ -266,6 +266,12 @@ public class TicketAdminServiceImpl implements TicketAdminService {
      * @return The ticket type string
      */
     private String determineTicketType(Ticket ticket) {
+        // First check if the ticket already has a stored ticketType
+        if (ticket.getTicketType() != null && !ticket.getTicketType().trim().isEmpty()) {
+            return ticket.getTicketType();
+        }
+        
+        // Fallback to legacy logic for existing tickets without ticketType
         // Check if it's a gift ticket first
         if (ticket.getIsGift() != null && ticket.getIsGift()) {
             return "GIFT";

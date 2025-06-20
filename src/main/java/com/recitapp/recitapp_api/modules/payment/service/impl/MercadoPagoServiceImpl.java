@@ -535,7 +535,10 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                 ticketRequest.setAttendeeLastName(ticketItem.getAttendeeLastName());
                 ticketRequest.setAttendeeDni(ticketItem.getAttendeeDni());
                 ticketRequest.setPrice(ticketItem.getPrice());
-                // ticketRequest.setPromotionId(null); // No promotions for now
+                
+                // IMPORTANTE: Pasar información del tipo de ticket
+                ticketRequest.setTicketPriceId(ticketItem.getTicketPriceId());
+                ticketRequest.setTicketType(ticketItem.getTicketType());
                 
                 ticketRequests.add(ticketRequest);
             }
@@ -675,6 +678,10 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                     ticketRequest.setAttendeeLastName(ticketItem.getAttendeeLastName());
                     ticketRequest.setAttendeeDni(ticketItem.getAttendeeDni());
                     ticketRequest.setPrice(BigDecimal.ZERO); // Forzar precio 0 para entradas de regalo
+                    
+                    // IMPORTANTE: Pasar información del tipo de ticket
+                    ticketRequest.setTicketPriceId(ticketItem.getTicketPriceId());
+                    ticketRequest.setTicketType(ticketItem.getTicketType());
                     
                     ticketRequests.add(ticketRequest);
                 }

@@ -47,5 +47,9 @@ public class TicketPurchaseRequestDTO {
         private java.math.BigDecimal price; // Null para entradas de regalo
 
         private Long promotionId;
+        
+        // Campos para mantener información del tipo de ticket original
+        private Long ticketPriceId; // ID del precio de ticket seleccionado
+        private String ticketType; // "GENERAL", "PROMOTIONAL_2X1", "GIFT", "VIP"
     }
 }

@@ -132,6 +132,10 @@ public class PromotionalTicketService {
             ticket.setPromotion(promotion);
         }
 
+        // Determinar y establecer el tipo de ticket
+        String ticketType = determineTicketTypeForPromoTicket(ticketDTO, promotion);
+        ticket.setTicketType(ticketType);
+
         // Generate QR code - now with proper error handling
         String verificationCode = UUID.randomUUID().toString().substring(0, 12);
         String qrCode = qrGenerator.generateTicketQR(null, verificationCode);
@@ -287,6 +291,12 @@ public class PromotionalTicketService {
      * @return The ticket type string
      */
     private String determineTicketType(Ticket ticket) {
+        // First check if the ticket already has a stored ticketType
+        if (ticket.getTicketType() != null && !ticket.getTicketType().trim().isEmpty()) {
+            return ticket.getTicketType();
+        }
+        
+        // Fallback to legacy logic for existing tickets without ticketType
         // Check if it's a gift ticket first
         if (ticket.getIsGift() != null && ticket.getIsGift()) {
             return "GIFT";
@@ -296,6 +306,39 @@ public class PromotionalTicketService {
         if (ticket.getPromotion() != null) {
             String promotionName = ticket.getPromotion().getName();
             String promotionDescription = ticket.getPromotion().getDescription();
+            
+            // Check for 2x1 promotion (case insensitive)
+            boolean is2x1 = (promotionName != null && promotionName.toLowerCase().contains("2x1")) ||
+                           (promotionDescription != null && promotionDescription.toLowerCase().contains("2x1")) ||
+                           (promotionName != null && promotionName.toLowerCase().contains("dos por uno")) ||
+                           (promotionDescription != null && promotionDescription.toLowerCase().contains("dos por uno"));
+            
+            if (is2x1) {
+                return "PROMOTIONAL_2X1";
+            } else {
+                return "PROMOTIONAL";
+            }
+        }
+        
+        return "GENERAL";
+    }
+
+    /**
+     * Determines the ticket type for a promotional ticket
+     * @param ticketDTO The ticket request DTO
+     * @param promotion The promotion associated with the ticket
+     * @return The ticket type string
+     */
+    private String determineTicketTypeForPromoTicket(PromotionalTicketRequestDTO.PromotionalTicketDTO ticketDTO, Promotion promotion) {
+        // Check if it's a gift ticket first
+        if (ticketDTO.isGift()) {
+            return "GIFT";
+        }
+        
+        // Check if it has a promotion
+        if (promotion != null) {
+            String promotionName = promotion.getName();
+            String promotionDescription = promotion.getDescription();
             
             // Check for 2x1 promotion (case insensitive)
             boolean is2x1 = (promotionName != null && promotionName.toLowerCase().contains("2x1")) ||

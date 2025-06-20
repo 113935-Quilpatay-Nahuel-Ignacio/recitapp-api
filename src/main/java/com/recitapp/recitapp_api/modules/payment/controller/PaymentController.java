@@ -213,6 +213,10 @@ public class PaymentController {
                 ticketRequest.setAttendeeDni(ticketItem.getAttendeeDni());
                 ticketRequest.setPrice(ticketItem.getPrice());
                 
+                // IMPORTANTE: Pasar información del tipo de ticket
+                ticketRequest.setTicketPriceId(ticketItem.getTicketPriceId());
+                ticketRequest.setTicketType(ticketItem.getTicketType());
+                
                 ticketRequests.add(ticketRequest);
             }
         }

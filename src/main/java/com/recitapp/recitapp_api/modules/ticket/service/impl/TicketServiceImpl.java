@@ -220,6 +220,10 @@ public class TicketServiceImpl implements TicketService {
             boolean isGiftTicket = (ticketRequest.getPrice() == null);
             ticket.setIsGift(isGiftTicket);
             
+            // Establecer el tipo de ticket basándose en la información del request
+            String ticketType = determineTicketTypeFromRequest(ticketRequest, isGiftTicket);
+            ticket.setTicketType(ticketType);
+            
             ticket.setRegistrationDate(LocalDateTime.now());
             ticket.setUpdatedAt(LocalDateTime.now());
 
@@ -570,6 +574,12 @@ public class TicketServiceImpl implements TicketService {
      * @return The ticket type string
      */
     private String determineTicketType(Ticket ticket) {
+        // First check if the ticket already has a stored ticketType
+        if (ticket.getTicketType() != null && !ticket.getTicketType().trim().isEmpty()) {
+            return ticket.getTicketType();
+        }
+        
+        // Fallback to legacy logic for existing tickets without ticketType
         // Check if it's a gift ticket first
         if (ticket.getIsGift() != null && ticket.getIsGift()) {
             return "GIFT";
@@ -593,6 +603,46 @@ public class TicketServiceImpl implements TicketService {
             }
         }
         
+        return "GENERAL";
+    }
+
+    private String determineTicketTypeFromRequest(TicketPurchaseRequestDTO.TicketRequestDTO ticketRequest, boolean isGiftTicket) {
+        // Si el request ya incluye el ticketType, usarlo directamente
+        if (ticketRequest.getTicketType() != null && !ticketRequest.getTicketType().trim().isEmpty()) {
+            return ticketRequest.getTicketType();
+        }
+        
+        // Si es un ticket de regalo (precio null), devolver GIFT
+        if (isGiftTicket) {
+            return "GIFT";
+        }
+        
+        // Si hay una promoción, determinar el tipo basándose en ella
+        if (ticketRequest.getPromotionId() != null) {
+            try {
+                Promotion promotion = promotionRepository.findById(ticketRequest.getPromotionId()).orElse(null);
+                if (promotion != null) {
+                    String promotionName = promotion.getName();
+                    String promotionDescription = promotion.getDescription();
+                    
+                    // Check for 2x1 promotion (case insensitive)
+                    boolean is2x1 = (promotionName != null && promotionName.toLowerCase().contains("2x1")) ||
+                                   (promotionDescription != null && promotionDescription.toLowerCase().contains("2x1")) ||
+                                   (promotionName != null && promotionName.toLowerCase().contains("dos por uno")) ||
+                                   (promotionDescription != null && promotionDescription.toLowerCase().contains("dos por uno"));
+                    
+                    if (is2x1) {
+                        return "PROMOTIONAL_2X1";
+                    } else {
+                        return "PROMOTIONAL";
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Error al determinar tipo de ticket por promoción: {}", e.getMessage());
+            }
+        }
+        
+        // Por defecto, devolver GENERAL
         return "GENERAL";
     }
 
