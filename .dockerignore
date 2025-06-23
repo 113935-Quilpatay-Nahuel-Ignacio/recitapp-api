@@ -1,0 +1,44 @@
+# Ignore Git
+.git
+.gitignore
+.gitattributes
+
+# Ignore IDE files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Ignore build artifacts
+target/
+*.jar
+*.war
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore documentation
+*.md
+docs/
+
+# Ignore test files (if you want to exclude them)
+src/test/
+
+# Ignore local uploads (use volume mounts instead)
+uploads/
+tickets/
+
+# Ignore Maven wrapper jar
+.mvn/wrapper/maven-wrapper.jar
+
+# Ignore log files
+*.log
+
+# Ignore temporary files
+*.tmp
+*.temp
+
+# Ignore Spring Boot DevTools restart trigger
+.reloadtrigger 
