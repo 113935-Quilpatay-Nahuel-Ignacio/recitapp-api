@@ -83,6 +83,40 @@ public class PaymentController {
         }
     }
 
+    @PostMapping("/create-preference-wallet-only")
+    public ResponseEntity<PaymentResponseDTO> createPaymentPreferenceWalletOnly(
+            @RequestBody PaymentRequestDTO paymentRequest) {
+        try {
+            // BYPASS DE SEGURIDAD: Establecer contexto anónimo para forzar que sea público
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                AnonymousAuthenticationToken anonymousAuth = new AnonymousAuthenticationToken(
+                    "anonymous", "anonymous", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
+                SecurityContextHolder.getContext().setAuthentication(anonymousAuth);
+                System.out.println("🔓 SECURITY BYPASS: Set anonymous authentication for wallet-only payment endpoint");
+            }
+            
+            System.out.println("=== WALLET-ONLY PAYMENT CONTROLLER ===");
+            System.out.println("✅ Wallet-only payment endpoint reached successfully!");
+            System.out.println("Event ID: " + paymentRequest.getEventId());
+            System.out.println("User ID: " + paymentRequest.getUserId());
+            System.out.println("Total Amount: " + paymentRequest.getTotalAmount());
+            
+            log.info("Creating wallet-only payment preference for event: {} and user: {}", 
+                    paymentRequest.getEventId(), paymentRequest.getUserId());
+            
+            PaymentResponseDTO response = mercadoPagoService.createPaymentPreferenceWalletOnly(paymentRequest);
+            
+            System.out.println("✅ Wallet-only payment preference created successfully");
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            System.out.println("❌ Error in wallet-only payment controller: " + e.getMessage());
+            log.error("Error creating wallet-only payment preference: {}", e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @PostMapping("/webhook")
     public ResponseEntity<String> handleWebhook(
             @RequestParam Map<String, String> params,

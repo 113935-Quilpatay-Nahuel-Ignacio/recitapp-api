@@ -7,6 +7,7 @@ import java.util.Map;
 
 public interface MercadoPagoService {
     PaymentResponseDTO createPaymentPreference(PaymentRequestDTO paymentRequest);
+    PaymentResponseDTO createPaymentPreferenceWalletOnly(PaymentRequestDTO paymentRequest);
     PaymentResponseDTO processConfirmedPayment(PaymentRequestDTO paymentRequest);
     void processWebhookPayment(Map<String, String> params, String payload);
     String getPaymentStatus(String paymentId);

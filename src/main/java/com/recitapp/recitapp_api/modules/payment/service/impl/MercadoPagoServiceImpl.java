@@ -65,9 +65,17 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
 
     @Override
     public PaymentResponseDTO createPaymentPreference(PaymentRequestDTO paymentRequest) {
+        return createPaymentPreference(paymentRequest, false);
+    }
+
+    public PaymentResponseDTO createPaymentPreferenceWalletOnly(PaymentRequestDTO paymentRequest) {
+        return createPaymentPreference(paymentRequest, true);
+    }
+
+    private PaymentResponseDTO createPaymentPreference(PaymentRequestDTO paymentRequest, boolean walletOnly) {
         try {
-            log.info("Creating MercadoPago preference for event: {}, user: {}, amount: {}", 
-                    paymentRequest.getEventId(), paymentRequest.getUserId(), paymentRequest.getTotalAmount());
+            log.info("Creating MercadoPago preference for event: {}, user: {}, amount: {}, walletOnly: {}", 
+                    paymentRequest.getEventId(), paymentRequest.getUserId(), paymentRequest.getTotalAmount(), walletOnly);
             
             PreferenceClient client = new PreferenceClient();
             
@@ -209,15 +217,24 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
             String externalReference = "EVENTO_" + paymentRequest.getEventId() + "_USER_" + paymentRequest.getUserId() + "_" + UUID.randomUUID().toString();
             log.debug("Generated external reference: {}", externalReference);
 
-            // Crear preferencia
-            PreferenceRequest preferenceRequest = PreferenceRequest.builder()
+            // Crear preferencia con soporte para Wallet Purchase (cuentas de MercadoPago)
+            PreferenceRequest.PreferenceRequestBuilder requestBuilder = PreferenceRequest.builder()
                 .items(items)
                 .backUrls(backUrls)
                 .payer(payer)
                 .externalReference(externalReference)
                 .notificationUrl(webhookUrl)
-                .expires(false)
-                .build();
+                .expires(false);
+                
+            // Solo agregar purpose si es wallet-only
+            if (walletOnly) {
+                requestBuilder.purpose("wallet_purchase"); // Habilita pagos solo con cuentas de MercadoPago
+                log.info("Preference configured for wallet-only payments");
+            } else {
+                log.info("Preference configured for all payment methods");
+            }
+                
+            PreferenceRequest preferenceRequest = requestBuilder.build();
 
             log.debug("Sending preference request to MercadoPago API...");
             Preference preference = client.create(preferenceRequest);
