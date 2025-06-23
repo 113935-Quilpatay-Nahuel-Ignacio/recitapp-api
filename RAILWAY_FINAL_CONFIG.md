@@ -2,7 +2,7 @@
 
 ## 🌐 URLs Configuradas
 
-**Backend Railway:** https://recitapp-api-production.up.railway.app
+**Backend Railway:** https://recitapp-api-production-da8a.up.railway.app
 **Frontend:** (por configurar - Vercel/Netlify)
 
 ## 📋 Variables de Entorno OBLIGATORIAS para Railway
@@ -11,7 +11,7 @@ Copia y pega estas variables en tu Railway Dashboard → Variables:
 
 ```bash
 # BACKEND URL (configurado automáticamente por Railway)
-BASE_URL=https://recitapp-api-production.up.railway.app/api
+BASE_URL=https://recitapp-api-production-da8a.up.railway.app/api
 
 # FRONTEND URL - ACTUALIZAR con tu dominio de frontend
 FRONTEND_URL=https://tu-frontend-domain.vercel.app
@@ -19,7 +19,7 @@ FRONTEND_URL=https://tu-frontend-domain.vercel.app
 # MERCADOPAGO - USAR CREDENCIALES REALES DE PRODUCCIÓN
 MERCADOPAGO_ACCESS_TOKEN=tu-access-token-real-de-produccion
 MERCADOPAGO_PUBLIC_KEY=tu-public-key-real-de-produccion
-MERCADOPAGO_WEBHOOK_URL=https://recitapp-api-production.up.railway.app/api/payments/webhook
+MERCADOPAGO_WEBHOOK_URL=https://recitapp-api-production-da8a.up.railway.app/api/payments/webhook
 MERCADOPAGO_SUCCESS_URL=https://tu-frontend-domain.vercel.app/payment/success
 MERCADOPAGO_FAILURE_URL=https://tu-frontend-domain.vercel.app/payment/failure
 MERCADOPAGO_PENDING_URL=https://tu-frontend-domain.vercel.app/payment/pending
@@ -61,12 +61,12 @@ PORT=8080
 
 ### Test de conexión al backend
 ```bash
-curl https://recitapp-api-production.up.railway.app/actuator/health
+curl https://recitapp-api-production-da8a.up.railway.app/actuator/health
 ```
 
 ### Test de API
 ```bash
-curl https://recitapp-api-production.up.railway.app/api/artists
+curl https://recitapp-api-production-da8a.up.railway.app/api/artists
 ```
 
 ### Test de CORS
@@ -75,7 +75,7 @@ curl -H "Origin: https://tu-frontend-domain.vercel.app" \
      -H "Access-Control-Request-Method: GET" \
      -H "Access-Control-Request-Headers: X-Requested-With" \
      -X OPTIONS \
-     https://recitapp-api-production.up.railway.app/api/artists
+     https://recitapp-api-production-da8a.up.railway.app/api/artists
 ```
 
 ## 🚨 PASOS IMPORTANTES ANTES DE USAR EN PRODUCCIÓN
@@ -105,7 +105,7 @@ curl -H "Origin: https://tu-frontend-domain.vercel.app" \
 
 El archivo `environment.prod.ts` ya está configurado con:
 ```typescript
-apiUrl: 'https://recitapp-api-production.up.railway.app/api'
+apiUrl: 'https://recitapp-api-production-da8a.up.railway.app/api'
 ```
 
 ### Build para producción:
