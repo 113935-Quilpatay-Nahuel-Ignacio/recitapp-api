@@ -17,6 +17,9 @@ RUN mvn clean package -DskipTests
 # Runtime stage
 FROM eclipse-temurin:17-jre-alpine
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 # Set working directory
 WORKDIR /app
 
@@ -37,11 +40,11 @@ RUN chown -R springboot:springboot /app /tmp/uploads /tmp/tickets
 USER springboot
 
 # Expose port (Railway will set PORT environment variable)
-EXPOSE 8080
+EXPOSE $PORT
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+# Health check using curl (more reliable than wget)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+  CMD curl -f http://localhost:${PORT:-8080}/actuator/health || exit 1
 
 # Run the application with production profile
 ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=production", "/app/app.jar"] 
