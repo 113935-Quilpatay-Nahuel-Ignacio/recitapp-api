@@ -9,9 +9,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 public class RecitappApplication {
 
 	public static void main(String[] args) {
-		System.out.println("=== STARTING RECITAPP APPLICATION ===");
-		System.out.println("🔍 Using default component scanning from package: com.recitapp.recitapp_api");
-		
 		SpringApplication.run(RecitappApplication.class, args);
 	}
 

@@ -45,7 +45,6 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> {
-                    System.out.println("=== CONFIGURING MAIN SECURITY RULES (NO PAYMENTS) ===");
                     authz
                         // Otros endpoints públicos (NO PAGOS - ya manejados por PaymentSecurityConfig)
                         .requestMatchers("/api/auth/**", "/auth/**").permitAll()
@@ -65,21 +64,9 @@ public class SecurityConfig {
                         
                         // Todos los demás requieren autenticación
                         .anyRequest().authenticated();
-                    System.out.println("=== MAIN SECURITY RULES CONFIGURED ===");
                 })
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
-                            System.out.println("=== MAIN AUTHENTICATION ENTRY POINT ===");
-                            System.out.println("URI: " + request.getRequestURI());
-                            System.out.println("Method: " + request.getMethod());
-                            System.out.println("Exception: " + authException.getMessage());
-                            
-                            // Verificar si es un endpoint de pagos (NO debería llegar aquí)
-                            if (request.getRequestURI().contains("payments")) {
-                                System.out.println("🚨 CRITICAL: Payment endpoint reached MAIN authentication entry point!");
-                                System.out.println("This should be handled by PaymentSecurityConfig instead!");
-                            }
-                            
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
                             response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"" + authException.getMessage() + "\",\"path\":\"" + request.getRequestURI() + "\"}");

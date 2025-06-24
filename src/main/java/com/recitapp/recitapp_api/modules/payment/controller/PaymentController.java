@@ -38,14 +38,6 @@ public class PaymentController {
 
     @PostConstruct
     public void init() {
-        System.out.println("🚀 PaymentController initialized successfully!");
-        System.out.println("📍 Controller path: /api/payments");
-        System.out.println("🔗 Available endpoints:");
-        System.out.println("  - POST /api/payments/create-preference");
-        System.out.println("  - POST /api/payments/process-payment");
-        System.out.println("  - POST /api/payments/webhook");
-        System.out.println("  - GET /api/payments/status/{paymentId}");
-        System.out.println("  - GET /api/payments/public-key");
         log.info("PaymentController ready to handle requests");
     }
 
@@ -61,72 +53,48 @@ public class PaymentController {
                 System.out.println("🔓 SECURITY BYPASS: Set anonymous authentication for payment endpoint");
             }
             
-            System.out.println("=== PAYMENT CONTROLLER ===");
-            System.out.println("✅ Payment endpoint reached successfully!");
-            System.out.println("Event ID: " + paymentRequest.getEventId());
-            System.out.println("User ID: " + paymentRequest.getUserId());
-            System.out.println("Total Amount: " + paymentRequest.getTotalAmount());
+
             
-            log.info("Creating payment preference for event: {} and user: {}", 
+            log.info("🎫 [PAYMENT-CONTROLLER] Creating payment preference for event: {} and user: {}", 
                     paymentRequest.getEventId(), paymentRequest.getUserId());
+            log.debug("💵 [PAYMENT-CONTROLLER] Total amount: ${}, Tickets count: {}", 
+                    paymentRequest.getTotalAmount(), 
+                    paymentRequest.getTickets() != null ? paymentRequest.getTickets().size() : 0);
             
             PaymentResponseDTO response = mercadoPagoService.createPaymentPreference(paymentRequest);
             
-            System.out.println("✅ Payment preference created successfully");
+            log.info("✅ [PAYMENT-CONTROLLER] Payment preference created successfully - Preference ID: {}", 
+                    response.getPreferenceId());
+            log.debug("🔗 [PAYMENT-CONTROLLER] Init point URL: {}", response.getInitPoint());
+
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            System.out.println("❌ Error in payment controller: " + e.getMessage());
+
             log.error("Error creating payment preference: {}", e.getMessage());
             e.printStackTrace();
             return ResponseEntity.badRequest().build();
         }
     }
 
-    @PostMapping("/create-preference-wallet-only")
-    public ResponseEntity<PaymentResponseDTO> createPaymentPreferenceWalletOnly(
-            @RequestBody PaymentRequestDTO paymentRequest) {
-        try {
-            // BYPASS DE SEGURIDAD: Establecer contexto anónimo para forzar que sea público
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                AnonymousAuthenticationToken anonymousAuth = new AnonymousAuthenticationToken(
-                    "anonymous", "anonymous", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
-                SecurityContextHolder.getContext().setAuthentication(anonymousAuth);
-                System.out.println("🔓 SECURITY BYPASS: Set anonymous authentication for wallet-only payment endpoint");
-            }
-            
-            System.out.println("=== WALLET-ONLY PAYMENT CONTROLLER ===");
-            System.out.println("✅ Wallet-only payment endpoint reached successfully!");
-            System.out.println("Event ID: " + paymentRequest.getEventId());
-            System.out.println("User ID: " + paymentRequest.getUserId());
-            System.out.println("Total Amount: " + paymentRequest.getTotalAmount());
-            
-            log.info("Creating wallet-only payment preference for event: {} and user: {}", 
-                    paymentRequest.getEventId(), paymentRequest.getUserId());
-            
-            PaymentResponseDTO response = mercadoPagoService.createPaymentPreferenceWalletOnly(paymentRequest);
-            
-            System.out.println("✅ Wallet-only payment preference created successfully");
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            System.out.println("❌ Error in wallet-only payment controller: " + e.getMessage());
-            log.error("Error creating wallet-only payment preference: {}", e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.badRequest().build();
-        }
-    }
+    // ENDPOINT ELIMINADO: /create-preference-wallet-only
+    // Ahora el endpoint estándar /create-preference incluye automáticamente todas las opciones de pago
+    // incluyendo saldo de MercadoPago, tarjetas de crédito/débito, etc.
 
     @PostMapping("/webhook")
     public ResponseEntity<String> handleWebhook(
             @RequestParam Map<String, String> params,
             @RequestBody String payload) {
         
+        log.info("🎣 [WEBHOOK-CONTROLLER] Received MercadoPago webhook notification");
+        log.debug("📥 [WEBHOOK-CONTROLLER] Headers and params: {}", params);
+        
         try {
             mercadoPagoService.processWebhookPayment(params, payload);
+            log.info("✅ [WEBHOOK-CONTROLLER] Webhook processed successfully");
             return ResponseEntity.ok("OK");
         } catch (Exception e) {
-            log.error("Error processing webhook: {}", e.getMessage());
+            log.error("❌ [WEBHOOK-CONTROLLER] Error processing webhook: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("ERROR");
         }
     }
@@ -176,8 +144,9 @@ public class PaymentController {
     @PostMapping("/wallet-purchase")
     public ResponseEntity<PaymentResponseDTO> processWalletPurchase(@RequestBody PaymentRequestDTO paymentRequest) {
         try {
-            log.info("Processing wallet purchase for Event ID: {}, User ID: {}", 
+            log.info("🏦 [WALLET-CONTROLLER] Processing wallet purchase for Event: {}, User: {}", 
                     paymentRequest.getEventId(), paymentRequest.getUserId());
+            log.debug("💰 [WALLET-CONTROLLER] Requested amount: ${}", paymentRequest.getTotalAmount());
             
             // Build ticket purchase request with wallet payment method
             TicketPurchaseRequestDTO ticketPurchaseRequest = buildWalletTicketPurchaseRequest(paymentRequest);

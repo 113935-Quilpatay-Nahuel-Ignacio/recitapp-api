@@ -27,7 +27,8 @@ public class MercadoPagoRefundServiceImpl implements MercadoPagoRefundService {
 
     @Override
     public RefundResponseDTO processRefund(String paymentId, BigDecimal amount, String reason) {
-        log.info("Processing MercadoPago refund for payment ID: {}, amount: {}, reason: {}", paymentId, amount, reason);
+        log.info("💸 [MERCADOPAGO-REFUND] Starting refund process for payment ID: {}, amount: ${}", paymentId, amount);
+        log.debug("📝 [MERCADOPAGO-REFUND] Refund reason: {}", reason != null ? reason : "No reason provided");
         
         try {
             // Configure MercadoPago with access token
@@ -38,7 +39,7 @@ public class MercadoPagoRefundServiceImpl implements MercadoPagoRefundService {
             Payment payment = paymentClient.get(Long.parseLong(paymentId));
             
             if (payment == null) {
-                log.error("Payment not found: {}", paymentId);
+                log.error("❌ [MERCADOPAGO-REFUND] Payment not found: {}", paymentId);
                 return RefundResponseDTO.failure(
                         paymentId,
                         amount,
@@ -47,9 +48,12 @@ public class MercadoPagoRefundServiceImpl implements MercadoPagoRefundService {
                 );
             }
             
+            log.info("✅ [MERCADOPAGO-REFUND] Payment found - Status: {}, Amount: ${}", 
+                    payment.getStatus(), payment.getTransactionAmount());
+            
             // Check if payment can be refunded
             if (!canRefundPayment(payment)) {
-                log.error("Payment {} cannot be refunded. Status: {}", paymentId, payment.getStatus());
+                log.error("🚫 [MERCADOPAGO-REFUND] Payment cannot be refunded - Status: {}", payment.getStatus());
                 return RefundResponseDTO.failure(
                         paymentId,
                         amount,
@@ -70,7 +74,7 @@ public class MercadoPagoRefundServiceImpl implements MercadoPagoRefundService {
             // According to the official documentation, we use refund(Long paymentId, BigDecimal amount)
             PaymentRefund refund = refundClient.refund(Long.parseLong(paymentId), amount);
             
-            log.info("MercadoPago refund created successfully. Refund ID: {}, Status: {}, Amount: {}", 
+            log.info("🎉 [MERCADOPAGO-REFUND] Refund created successfully - ID: {}, Status: {}, Amount: ${}", 
                     refund.getId(), refund.getStatus(), refund.getAmount());
             
             // Handle different refund statuses and create appropriate response

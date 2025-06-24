@@ -7,7 +7,7 @@ import java.util.Map;
 
 public interface MercadoPagoService {
     PaymentResponseDTO createPaymentPreference(PaymentRequestDTO paymentRequest);
-    PaymentResponseDTO createPaymentPreferenceWalletOnly(PaymentRequestDTO paymentRequest);
+    // MÉTODO ELIMINADO: createPaymentPreferenceWalletOnly - Ahora createPaymentPreference incluye todas las opciones
     PaymentResponseDTO processConfirmedPayment(PaymentRequestDTO paymentRequest);
     void processWebhookPayment(Map<String, String> params, String payload);
     String getPaymentStatus(String paymentId);

@@ -33,9 +33,10 @@ build/
 .vscode/
 
 ### Security - Configuration files with credentials ###
+# Application properties with secrets and credentials
 src/main/resources/application.properties
-src/main/resources/application-notifications.properties
-src/main/resources/application-local.properties
+src/main/resources/application-*.properties
+!src/main/resources/application-*.properties.example
 
 # Firebase service account files - NEVER commit these!
 src/main/resources/firebase/*.json
@@ -43,18 +44,79 @@ src/main/resources/firebase/firebase-service-account.json
 src/main/resources/firebase/recitapp-*-firebase-adminsdk-*.json
 src/main/resources/firebase/*-service-account.json
 src/main/resources/firebase/*-adminsdk-*.json
+src/main/resources/firebase/*-firebase-adminsdk-*.json
 
-# Other configuration files
-*.properties
-!application-template.properties
-!application-notifications.properties.example
+# MercadoPago credentials and tokens
+**/mercadopago-*.properties
+**/mp-*.properties
+**/payment-*.properties
+
+# Database credentials
+**/database.properties
+**/db-*.properties
+**/datasource.properties
+
+# JWT and authentication secrets
+**/jwt-*.properties
+**/auth-*.properties
+**/security-*.properties
+
+# Email/SMTP credentials
+**/mail-*.properties
+**/smtp-*.properties
+**/email-*.properties
 
 # API Keys and secrets
 **/api-keys.json
 **/secrets.json
 **/credentials.json
+**/config-secrets.json
+**/sensitive-config.json
+
+# AWS/Cloud credentials
+**/aws-credentials.json
+**/gcp-credentials.json
+**/azure-credentials.json
+**/.aws/
+**/aws-config
+
+# SSL/TLS certificates and keys
+**/*.p12
+**/*.jks
+**/*.keystore
+**/*.truststore
+**/*.pem
+**/*.key
+**/*.crt
+**/*.cert
 
 # Environment-specific files
 .env
-.env.local
-.env.production
+.env.*
+!.env.example
+application-local.properties
+application-dev.properties
+application-staging.properties
+application-prod.properties
+
+# Backup files that might contain secrets
+*.bak
+*.backup
+*-backup.*
+*.dump
+
+# IDE specific files that might contain sensitive info
+.idea/dataSources.xml
+.idea/dataSources.local.xml
+.idea/sqldialects.xml
+
+# Log files - NEVER commit logs (pueden contener secrets/tokens)
+logs/
+*.log
+logs/*.log
+logs/recitapp.log*
+logs/mercadopago.log*
+logs/mercadopago-webhooks.log*
+
+# Archivos específicos detectados con secrets
+logs/recitapp.log

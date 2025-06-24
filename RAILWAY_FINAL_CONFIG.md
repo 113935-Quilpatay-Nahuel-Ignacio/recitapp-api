@@ -3,7 +3,7 @@
 ## 🌐 URLs Configuradas
 
 **Backend Railway:** https://recitapp-api-production-da8a.up.railway.app
-**Frontend:** (por configurar - Vercel/Netlify)
+**Frontend:** https://recitapp-niquilpatay.web.app
 
 ## 📋 Variables de Entorno OBLIGATORIAS para Railway
 
@@ -13,16 +13,16 @@ Copia y pega estas variables en tu Railway Dashboard → Variables:
 # BACKEND URL (configurado automáticamente por Railway)
 BASE_URL=https://recitapp-api-production-da8a.up.railway.app/api
 
-# FRONTEND URL - ACTUALIZAR con tu dominio de frontend
-FRONTEND_URL=https://tu-frontend-domain.vercel.app
+# FRONTEND URL - Tu dominio real de Firebase
+FRONTEND_URL=https://recitapp-niquilpatay.web.app
 
 # MERCADOPAGO - USAR CREDENCIALES REALES DE PRODUCCIÓN
 MERCADOPAGO_ACCESS_TOKEN=tu-access-token-real-de-produccion
 MERCADOPAGO_PUBLIC_KEY=tu-public-key-real-de-produccion
 MERCADOPAGO_WEBHOOK_URL=https://recitapp-api-production-da8a.up.railway.app/api/payments/webhook
-MERCADOPAGO_SUCCESS_URL=https://tu-frontend-domain.vercel.app/payment/success
-MERCADOPAGO_FAILURE_URL=https://tu-frontend-domain.vercel.app/payment/failure
-MERCADOPAGO_PENDING_URL=https://tu-frontend-domain.vercel.app/payment/pending
+MERCADOPAGO_SUCCESS_URL=https://recitapp-niquilpatay.web.app/payment/success
+MERCADOPAGO_FAILURE_URL=https://recitapp-niquilpatay.web.app/payment/failure
+MERCADOPAGO_PENDING_URL=https://recitapp-niquilpatay.web.app/payment/pending
 
 # JWT SECURITY - GENERAR UNO NUEVO Y SEGURO
 JWT_SECRET=tu-jwt-secret-super-seguro-de-64-caracteres-minimo
@@ -71,7 +71,7 @@ curl https://recitapp-api-production-da8a.up.railway.app/api/artists
 
 ### Test de CORS
 ```bash
-curl -H "Origin: https://tu-frontend-domain.vercel.app" \
+curl -H "Origin: https://recitapp-niquilpatay.web.app" \
      -H "Access-Control-Request-Method: GET" \
      -H "Access-Control-Request-Headers: X-Requested-With" \
      -X OPTIONS \
@@ -126,6 +126,6 @@ npx vercel --prod
 - [ ] Credenciales reales de MercadoPago
 - [ ] Credenciales reales de Gmail
 - [ ] Frontend deployado
-- [ ] URLs del frontend actualizadas en Railway
+- [x] URLs del frontend actualizadas en Railway (Firebase: recitapp-niquilpatay.web.app)
 - [ ] Testing de API funcionando
 - [ ] CORS funcionando entre frontend y backend 

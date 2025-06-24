@@ -6,6 +6,7 @@ import com.mercadopago.client.preference.PreferenceBackUrlsRequest;
 import com.mercadopago.client.preference.PreferenceClient;
 import com.mercadopago.client.preference.PreferenceItemRequest;
 import com.mercadopago.client.preference.PreferencePayerRequest;
+import com.mercadopago.client.preference.PreferencePaymentMethodsRequest;
 import com.mercadopago.client.preference.PreferenceRequest;
 import com.mercadopago.resources.preference.Preference;
 import com.mercadopago.resources.payment.Payment;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,6 +44,9 @@ import java.util.Date;
 @RequiredArgsConstructor
 @Slf4j
 public class MercadoPagoServiceImpl implements MercadoPagoService {
+
+    @Value("${mercadopago.access.token}")
+    private String accessToken;
 
     @Value("${mercadopago.public.key}")
     private String publicKey;
@@ -65,26 +70,37 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
 
     @Override
     public PaymentResponseDTO createPaymentPreference(PaymentRequestDTO paymentRequest) {
-        return createPaymentPreference(paymentRequest, false);
-    }
-
-    public PaymentResponseDTO createPaymentPreferenceWalletOnly(PaymentRequestDTO paymentRequest) {
-        return createPaymentPreference(paymentRequest, true);
-    }
-
-    private PaymentResponseDTO createPaymentPreference(PaymentRequestDTO paymentRequest, boolean walletOnly) {
         try {
-            log.info("Creating MercadoPago preference for event: {}, user: {}, amount: {}, walletOnly: {}", 
-                    paymentRequest.getEventId(), paymentRequest.getUserId(), paymentRequest.getTotalAmount(), walletOnly);
+            log.info("🚀 [MERCADOPAGO] Creating payment preference - Event: {}, User: {}, Amount: ${}", 
+                    paymentRequest.getEventId(), paymentRequest.getUserId(), paymentRequest.getTotalAmount());
             
-            PreferenceClient client = new PreferenceClient();
-            
-            // Validar datos de entrada
-            if (paymentRequest.getTickets() == null || paymentRequest.getTickets().isEmpty()) {
-                throw new IllegalArgumentException("No tickets provided in payment request");
+            // Log payment request details
+            log.debug("📋 [MERCADOPAGO] Payment request details - Tickets count: {}, Payer: {}", 
+                    paymentRequest.getTickets() != null ? paymentRequest.getTickets().size() : 0,
+                    paymentRequest.getPayer() != null ? paymentRequest.getPayer().getEmail() : "No payer");
+
+            // IMPORTANTE: Para incluir saldo de MercadoPago junto con tarjetas, NO usar purpose: "wallet_purchase"
+            // El modo estándar automáticamente incluye: tarjetas + saldo MP + otros métodos
+            log.info("💳 [MERCADOPAGO] UNIFIED mode - All payment methods including MercadoPago Wallet available");
+
+            // Validar parámetros
+            if (paymentRequest.getEventId() == null || paymentRequest.getUserId() == null) {
+                throw new IllegalArgumentException("Event ID and User ID are required");
             }
-            
-            // Separar entradas de pago de entradas gratuitas
+
+            if (paymentRequest.getTickets() == null || paymentRequest.getTickets().isEmpty()) {
+                throw new IllegalArgumentException("At least one ticket is required");
+            }
+
+            if (paymentRequest.getTotalAmount() == null || paymentRequest.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Total amount must be greater than 0");
+            }
+
+            // Configurar cliente de MercadoPago
+            MercadoPagoConfig.setAccessToken(accessToken);
+            PreferenceClient client = new PreferenceClient();
+
+            // Separar tickets de pago y gratuitos
             List<PaymentRequestDTO.TicketItemDTO> paidTickets = paymentRequest.getTickets().stream()
                 .filter(ticket -> ticket.getPrice() != null && ticket.getPrice().compareTo(BigDecimal.ZERO) > 0)
                 .collect(Collectors.toList());
@@ -94,6 +110,18 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                 .collect(Collectors.toList());
                 
             log.info("Processing {} paid tickets and {} gift tickets", paidTickets.size(), giftTickets.size());
+            
+            // Log detailed ticket information
+            for (PaymentRequestDTO.TicketItemDTO ticket : paidTickets) {
+                log.debug("💰 [MERCADOPAGO] Paid ticket - Type: {}, Price: ${}, Quantity: {}, Total: ${}", 
+                        ticket.getTicketType(), ticket.getPrice(), ticket.getQuantity(), 
+                        ticket.getPrice().multiply(BigDecimal.valueOf(ticket.getQuantity())));
+            }
+            
+            for (PaymentRequestDTO.TicketItemDTO ticket : giftTickets) {
+                log.debug("🎁 [MERCADOPAGO] Gift ticket - Type: {}, Quantity: {}", 
+                        ticket.getTicketType(), ticket.getQuantity());
+            }
             
             // Si solo hay entradas gratuitas, no crear preferencia de MercadoPago
             if (paidTickets.isEmpty()) {
@@ -112,8 +140,12 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
             if (originalPaidTotal.compareTo(requestedAmount) > 0 && requestedAmount.compareTo(BigDecimal.ZERO) > 0) {
                 // Hay un descuento aplicado (probablemente billetera virtual)
                 discountRatio = requestedAmount.divide(originalPaidTotal, 4, RoundingMode.HALF_UP);
-                log.info("Wallet discount detected. Original total: {}, Requested amount: {}, Discount ratio: {}", 
-                    originalPaidTotal, requestedAmount, discountRatio);
+                log.info("💸 [MERCADOPAGO] Wallet discount detected - Original: ${}, Requested: ${}, Discount: {}%", 
+                    originalPaidTotal, requestedAmount, 
+                    BigDecimal.ONE.subtract(discountRatio).multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP));
+                log.debug("🧮 [MERCADOPAGO] Discount ratio calculated: {}", discountRatio);
+            } else {
+                log.debug("💯 [MERCADOPAGO] No discount applied - Full amount: ${}", originalPaidTotal);
             }
             
             final BigDecimal finalDiscountRatio = discountRatio;
@@ -171,7 +203,14 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                 })
                 .collect(Collectors.toList());
 
-            log.debug("Created {} items for preference", items.size());
+            log.info("📦 [MERCADOPAGO] Created {} preference items for processing", items.size());
+            
+            // Log each item created
+            for (int i = 0; i < items.size(); i++) {
+                PreferenceItemRequest item = items.get(i);
+                log.debug("📋 [MERCADOPAGO] Item {}: {} x{} @ ${} each", 
+                        i + 1, item.getTitle(), item.getQuantity(), item.getUnitPrice());
+            }
 
             // Configurar URLs de retorno
             PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
@@ -180,61 +219,67 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                 .pending(pendingUrl)
                 .build();
 
-            log.debug("Configured back URLs - Success: {}, Failure: {}, Pending: {}", 
+            log.info("🔗 [MERCADOPAGO] Configured redirect URLs - Success: {}, Failure: {}, Pending: {}", 
                     successUrl, failureUrl, pendingUrl);
 
-            // Configurar pagador (simplificado para evitar errores de SDK)
+            // Configurar pagador para permitir selección libre de cuenta MercadoPago
             PreferencePayerRequest payer = null;
-            if (paymentRequest.getPayer() != null && paymentRequest.getPayer().getEmail() != null) {
-                log.debug("Configuring payer: email={}, name={} {}", 
-                        paymentRequest.getPayer().getEmail(), 
-                        paymentRequest.getPayer().getFirstName(), 
-                        paymentRequest.getPayer().getLastName());
+            
+            // ✅ SOLUCIÓN: NO configurar email específico para permitir selección libre
+            // Esto permite que el usuario elija cualquier cuenta de MercadoPago al pagar
+            if (paymentRequest.getPayer() != null) {
+                log.info("🆔 [MERCADOPAGO] Configuring payer for FREE account selection (no email restriction)");
                 
                 try {
-                    // Configuración básica del pagador
+                    // Configuración básica del pagador SIN email para máxima flexibilidad
                     payer = PreferencePayerRequest.builder()
-                        .email(paymentRequest.getPayer().getEmail())
                         .name(paymentRequest.getPayer().getFirstName() != null ? 
                               paymentRequest.getPayer().getFirstName() : "")
                         .surname(paymentRequest.getPayer().getLastName() != null ? 
                                 paymentRequest.getPayer().getLastName() : "")
+                        // ✅ NO configurar .email() - esto permite selección libre de cuenta
                         .build();
                     
-                    log.debug("Payer configured successfully with email: {}", paymentRequest.getPayer().getEmail());
+                    log.info("✅ [MERCADOPAGO] Payer configured for free account selection - User can choose any MercadoPago account");
                     
                 } catch (Exception e) {
-                    log.warn("Error configuring payer, proceeding with minimal payer info: {}", e.getMessage());
-                    // Configurar pagador mínimo solo con email
-                    payer = PreferencePayerRequest.builder()
-                        .email(paymentRequest.getPayer().getEmail())
-                        .build();
+                    log.warn("⚠️ [MERCADOPAGO] Error configuring payer, using minimal config: {}", e.getMessage());
+                    // Configuración mínima sin restricciones
+                    payer = PreferencePayerRequest.builder().build();
                 }
             } else {
-                log.warn("No payer information provided or missing email");
+                log.info("🔓 [MERCADOPAGO] No payer restrictions - Full account selection freedom");
+                // Sin configuración de payer = máxima libertad de selección
+                payer = null;
             }
 
             String externalReference = "EVENTO_" + paymentRequest.getEventId() + "_USER_" + paymentRequest.getUserId() + "_" + UUID.randomUUID().toString();
-            log.debug("Generated external reference: {}", externalReference);
+            log.info("🆔 [MERCADOPAGO] Generated external reference: {}", externalReference);
 
-            // Crear preferencia con soporte para Wallet Purchase (cuentas de MercadoPago)
-            PreferenceRequest.PreferenceRequestBuilder requestBuilder = PreferenceRequest.builder()
+            // Configurar métodos de pago explícitamente para asegurar que dinero en cuenta esté disponible
+            PreferencePaymentMethodsRequest paymentMethods = PreferencePaymentMethodsRequest.builder()
+                // NO excluir account_money/available_money para permitir saldo de cuenta MercadoPago
+                .excludedPaymentMethods(Collections.emptyList())
+                .excludedPaymentTypes(Collections.emptyList())
+                .installments(24) // Máximo de cuotas
+                .build();
+                
+            log.info("💳 [MERCADOPAGO] Payment methods configured to include ALL options: cards, account money, and more");
+
+            // Crear preferencia UNIFICADA que incluye TODOS los métodos incluyendo saldo MercadoPago
+            // IMPORTANTE: NO usar "purpose": "wallet_purchase" para permitir TODAS las opciones
+            PreferenceRequest preferenceRequest = PreferenceRequest.builder()
                 .items(items)
                 .backUrls(backUrls)
                 .payer(payer)
                 .externalReference(externalReference)
                 .notificationUrl(webhookUrl)
-                .expires(false);
+                .paymentMethods(paymentMethods) // Configuración explícita de métodos de pago
+                .expires(false)
+                // SIN purpose = permite tarjetas + saldo MP + otros métodos automáticamente
+                .build();
                 
-            // Solo agregar purpose si es wallet-only
-            if (walletOnly) {
-                requestBuilder.purpose("wallet_purchase"); // Habilita pagos solo con cuentas de MercadoPago
-                log.info("Preference configured for wallet-only payments");
-            } else {
-                log.info("Preference configured for all payment methods");
-            }
-                
-            PreferenceRequest preferenceRequest = requestBuilder.build();
+            log.info("✅ [MERCADOPAGO] Unified preference configured with ALL payment methods including MercadoPago Wallet");
 
             log.debug("Sending preference request to MercadoPago API...");
             Preference preference = client.create(preferenceRequest);
@@ -359,14 +404,17 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
     @Override
     public void processWebhookPayment(Map<String, String> params, String payload) {
         try {
-            log.info("Processing MercadoPago webhook with params: {}", params);
-            log.info("Webhook payload: {}", payload);
+            log.info("🔔 [MERCADOPAGO-WEBHOOK] Processing webhook notification");
+            log.info("📥 [MERCADOPAGO-WEBHOOK] Params received: {}", params);
+            log.debug("📄 [MERCADOPAGO-WEBHOOK] Full payload: {}", payload);
             
             String type = params.get("type");
             String dataId = params.get("data.id");
             
+            log.info("🎯 [MERCADOPAGO-WEBHOOK] Notification type: {}, Data ID: {}", type, dataId);
+            
             if ("payment".equals(type) && dataId != null) {
-                log.info("Processing payment notification for payment ID: {}", dataId);
+                log.info("💳 [MERCADOPAGO-WEBHOOK] Processing payment notification for ID: {}", dataId);
                 
                 // Obtener información detallada del pago
                 try {
@@ -381,19 +429,23 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                     String externalReference = payment.getExternalReference();
                     String paymentStatus = payment.getStatus();
                     
-                    log.info("Payment method details - Method: {}, Type: {}, Name: {}, Issuer: {}, Status: {}, External Reference: {}", 
-                            paymentMethodId, paymentTypeId, paymentMethodName, issuerName, paymentStatus, externalReference);
+                    log.info("📊 [MERCADOPAGO-WEBHOOK] Payment details - Method: {}, Type: {}, Name: {}, Issuer: {}, Status: {}", 
+                            paymentMethodId, paymentTypeId, paymentMethodName, issuerName, paymentStatus);
+                    log.info("🆔 [MERCADOPAGO-WEBHOOK] External Reference: {}", externalReference);
+                    log.info("💰 [MERCADOPAGO-WEBHOOK] Payment Amount: ${}", payment.getTransactionAmount());
                     
                     // Actualizar la transacción con el payment ID real de MercadoPago
                     if (externalReference != null && "approved".equals(paymentStatus)) {
-                        log.info("Updating transaction with MercadoPago payment ID: {} for external reference: {}", dataId, externalReference);
+                        log.info("✅ [MERCADOPAGO-WEBHOOK] Payment approved - Updating transaction with payment ID: {}", dataId);
                         boolean updated = updateTransactionWithPaymentId(externalReference, dataId, paymentMethodName);
                         
                         if (updated) {
-                            log.info("Transaction successfully updated with MercadoPago payment ID: {}", dataId);
+                            log.info("🎉 [MERCADOPAGO-WEBHOOK] Transaction successfully updated with payment ID: {}", dataId);
                         } else {
-                            log.warn("Could not find transaction with external reference: {} to update with payment ID: {}", externalReference, dataId);
+                            log.warn("⚠️ [MERCADOPAGO-WEBHOOK] Could not find transaction with external reference: {} to update", externalReference);
                         }
+                    } else if (externalReference != null && !"approved".equals(paymentStatus)) {
+                        log.warn("❌ [MERCADOPAGO-WEBHOOK] Payment not approved - Status: {}, External Reference: {}", paymentStatus, externalReference);
                     }
                     
                 } catch (MPException | MPApiException e) {

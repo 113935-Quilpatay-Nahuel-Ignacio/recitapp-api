@@ -5,9 +5,6 @@ server.port=8080
 spring.mvc.dispatch-trace-request=true
 spring.mvc.dispatch-options-request=true
 spring.mvc.throw-exception-if-no-handler-found=true
-# Removed conflicting static path pattern - using WebConfig instead
-# spring.mvc.static-path-pattern=/static/**
-# spring.web.resources.static-locations=classpath:/static/
 
 # Spring Boot Actuator - For debugging controller mappings
 management.endpoints.web.exposure.include=mappings,health,info
@@ -19,25 +16,24 @@ spring.application.name=recitapp
 # Active Profiles
 spring.profiles.active=notifications
 
-# Database Configuration
+# Database Configuration - CAMBIAR CREDENCIALES
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
-spring.datasource.password=Nachuchi2003#
+spring.datasource.password=YOUR_DB_PASSWORD
 spring.datasource.url=jdbc:mysql://localhost:3306/recitapp?useSSL=false&serverTimezone=UTC
-spring.datasource.username=root
+spring.datasource.username=YOUR_DB_USERNAME
 spring.jpa.defer-datasource-initialization=true
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
-# Hibernate logging disabled for cleaner debugging
 spring.jpa.properties.hibernate.format_sql=false
 spring.jpa.show-sql=false
 
-# Mail Configuration - Use environment variables or notifications profile
+# Mail Configuration - CAMBIAR CREDENCIALES
 spring.mail.host=smtp.gmail.com
-spring.mail.password=${MAIL_PASSWORD:gwva eiyh yycb nzdi}
+spring.mail.password=YOUR_GMAIL_APP_PASSWORD
 spring.mail.port=587
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
-spring.mail.username=${MAIL_USERNAME:niquilpatay@gmail.com}
+spring.mail.username=YOUR_EMAIL@gmail.com
 
 # Redis Configuration
 spring.redis.host=localhost
@@ -62,19 +58,20 @@ springdoc.swagger-ui.operationsSorter=method
 springdoc.swagger-ui.path=/swagger-ui.html
 springdoc.swagger-ui.tagsSorter=alpha
 
-# JWT Configuration
-jwt.secret=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+# JWT Configuration - CAMBIAR SECRET
+jwt.secret=YOUR_JWT_SECRET_KEY_HERE_MUST_BE_256_BITS_OR_MORE
 jwt.expiration=86400000
 jwt.refresh.expiration=604800000
 
 # Password Reset Configuration
 app.password-reset.expiration=3600000
 app.password-reset.max-attempts=3
-app.frontend.url=http://localhost:3000
+app.frontend.url=http://localhost:4200
 
-# MercadoPago Configuration
-mercadopago.access.token=TEST-4403492759962042-060223-ccef50ad15229a32784b2504ce3d4f8c-1020599231
-mercadopago.public.key=TEST-31b86a3a-dcb7-43c6-bfcd-0426844ad5a8
+# MercadoPago Configuration - CAMBIAR TOKENS
+# Obtener desde: https://www.mercadopago.com.ar/developers/panel/app
+mercadopago.access.token=TEST-YOUR_ACCESS_TOKEN_HERE
+mercadopago.public.key=TEST-YOUR_PUBLIC_KEY_HERE
 mercadopago.success.url=http://localhost:4200/payment/success
 mercadopago.failure.url=http://localhost:4200/payment/failure
 mercadopago.pending.url=http://localhost:4200/payment/pending
@@ -151,4 +148,4 @@ logging.logback.rollingpolicy.total-size-cap=100MB
 
 # Specific log levels for debugging
 logging.level.com.recitapp.recitapp_api.modules.wallet=DEBUG
-logging.level.com.recitapp.recitapp_api.modules.ticket=INFO
+logging.level.com.recitapp.recitapp_api.modules.ticket=INFO 

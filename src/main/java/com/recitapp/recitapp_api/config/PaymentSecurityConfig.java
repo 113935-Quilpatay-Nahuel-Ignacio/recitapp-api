@@ -21,8 +21,6 @@ public class PaymentSecurityConfig {
 
     @Bean
     public SecurityFilterChain paymentSecurityFilterChain(HttpSecurity http) throws Exception {
-        System.out.println("=== CONFIGURING PAYMENT SECURITY FILTER CHAIN ===");
-        
         return http
                 .securityMatcher("/api/payments/**", "/payments/**") // SOLO para endpoints de pagos
                 .csrf(AbstractHttpConfigurer::disable)
@@ -31,7 +29,6 @@ public class PaymentSecurityConfig {
                 .cors(cors -> cors.configurationSource(paymentCorsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> {
-                    System.out.println("=== PAYMENT ENDPOINTS: ALL PERMIT ALL ===");
                     authz.anyRequest().permitAll(); // TODO completamente público
                 })
                 .build();

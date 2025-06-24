@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Autenticación", description = "Endpoints para autenticación y autorización")
 public class AuthController {
 
@@ -105,7 +107,7 @@ public class AuthController {
     })
     public ResponseEntity<?> register(@Valid @RequestBody UserRegistrationRequest registrationRequest, 
                                     HttpServletRequest request) {
-        System.out.println("AuthController - Register endpoint called for email: " + registrationRequest.getEmail());
+        // Register endpoint called
         try {
             // Verificar si es un usuario invitado
             boolean isGuest = guestUserService.isGuestRequest(request);
@@ -176,21 +178,38 @@ public class AuthController {
             @ApiResponse(responseCode = "429", description = "Demasiados intentos")
     })
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody PasswordResetRequest resetRequest) {
+        log.info("=== FORGOT PASSWORD REQUEST RECEIVED ===");
+        log.info("Email solicitado: {}", resetRequest.getEmail());
+        
         try {
-            passwordResetService.initiatePasswordReset(resetRequest.getEmail());
-            return ResponseEntity.ok(Map.of(
-                    "message", "Si el email existe en nuestro sistema, recibirás un enlace de recuperación"
-            ));
+            log.info("Llamando a passwordResetService.initiatePasswordReset()...");
+            boolean isTemporaryAccountCreated = passwordResetService.initiatePasswordReset(resetRequest.getEmail());
+            log.info("✅ passwordResetService.initiatePasswordReset() completado exitosamente");
+            
+            if (isTemporaryAccountCreated) {
+                return ResponseEntity.ok(Map.of(
+                        "message", "Hemos creado una cuenta temporal para tu email. Te hemos enviado las credenciales por email para que puedas iniciar sesión.",
+                        "isTemporaryAccount", true
+                ));
+            } else {
+                return ResponseEntity.ok(Map.of(
+                        "message", "Si el email existe en nuestro sistema, recibirás un enlace de recuperación.",
+                        "isTemporaryAccount", false
+                ));
+            }
         } catch (RuntimeException e) {
+            log.error("❌ RuntimeException en forgotPassword: {}", e.getMessage(), e);
             // Por seguridad, no revelamos si el email existe o no
             if (e.getMessage().contains("Demasiados intentos")) {
                 return ResponseEntity.status(429)
                         .body(Map.of("error", "Demasiados intentos", "message", e.getMessage()));
             }
             return ResponseEntity.ok(Map.of(
-                    "message", "Si el email existe en nuestro sistema, recibirás un enlace de recuperación"
+                    "message", "Si el email existe en nuestro sistema, recibirás un enlace de recuperación.",
+                    "isTemporaryAccount", false
             ));
         } catch (Exception e) {
+            log.error("❌ Exception en forgotPassword: {}", e.getMessage(), e);
             return ResponseEntity.status(500)
                     .body(Map.of("error", "Error interno del servidor", "message", e.getMessage()));
         }
