@@ -286,7 +286,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
 
             log.info("Payment preference created successfully: {}", preference.getId());
 
-            // Configuración para Checkout Bricks
+            // Configuración para Checkout Bricks (mantener compatibilidad)
             PaymentResponseDTO.BricksConfiguration bricksConfig = PaymentResponseDTO.BricksConfiguration.builder()
                 .locale("es-AR")
                 .theme("default")
@@ -296,6 +296,17 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                     .mercadoPagoWallet(true)
                     .cash(true)
                     .bankTransfer(true)
+                    .build())
+                .build();
+
+            // Nueva configuración para Checkout API (solo tarjetas y saldo MP)
+            PaymentResponseDTO.ApiConfiguration apiConfig = PaymentResponseDTO.ApiConfiguration.builder()
+                .locale("es-AR")
+                .theme("default")
+                .enabledPaymentMethods(PaymentResponseDTO.EnabledPaymentMethods.builder()
+                    .creditCard(true)
+                    .debitCard(true)
+                    .mercadoPagoWallet(true)
                     .build())
                 .build();
 
@@ -355,6 +366,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                     .issuerName(null)
                     .build())
                 .bricksConfig(bricksConfig)
+                .apiConfig(apiConfig)
                 .build();
 
         } catch (MPException e) {

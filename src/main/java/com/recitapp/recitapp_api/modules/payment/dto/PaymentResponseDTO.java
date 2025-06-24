@@ -17,7 +17,7 @@ public class PaymentResponseDTO {
     private String initPoint;
     private String sandboxInitPoint;
     
-    // Campos para Checkout Bricks
+    // Campos para Checkout Bricks y API
     private String publicKey;
     private BigDecimal totalAmount;
     private String status;
@@ -32,8 +32,11 @@ public class PaymentResponseDTO {
     // Información del método de pago
     private PaymentMethodInfo paymentMethodInfo;
     
-    // Configuración para Bricks
+    // Configuración para Bricks (mantener compatibilidad)
     private BricksConfiguration bricksConfig;
+    
+    // Nueva configuración para Checkout API
+    private ApiConfiguration apiConfig;
     
     @Data
     @Builder
@@ -49,12 +52,32 @@ public class PaymentResponseDTO {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class ApiConfiguration {
+        private String locale; // 'es-AR', 'pt-BR', etc.
+        private String theme; // 'default', 'dark', 'bootstrap', 'flat'
+        private EnabledPaymentMethods enabledPaymentMethods;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class PaymentMethods {
         private boolean creditCard;
         private boolean debitCard;
         private boolean mercadoPagoWallet;
         private boolean cash;
         private boolean bankTransfer;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class EnabledPaymentMethods {
+        private boolean creditCard;
+        private boolean debitCard;
+        private boolean mercadoPagoWallet;
     }
     
     @Data
