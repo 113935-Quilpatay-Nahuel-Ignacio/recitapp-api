@@ -736,6 +736,19 @@ public class EventServiceImpl implements EventService {
         Long soldTickets = ticketRepository.countSoldTicketsByEventId(eventId);
         Double occupancyRate = totalTickets > 0 ? (soldTickets.doubleValue() / totalTickets.doubleValue()) * 100 : 0;
 
+        // Obtener estadísticas por sección
+        List<Object[]> sectionStatsResults = ticketPriceRepository.getSectionStatisticsByEventId(eventId);
+        List<EventStatisticsDTO.SectionStatisticsDTO> sectionStatistics = sectionStatsResults.stream()
+                .map(result -> EventStatisticsDTO.SectionStatisticsDTO.builder()
+                        .sectionId(((Number) result[0]).longValue())
+                        .sectionName((String) result[1])
+                        .totalTicketsForSale(((Number) result[2]).longValue())
+                        .ticketsSold(((Number) result[3]).longValue())
+                        .ticketsRemaining(((Number) result[4]).longValue())
+                        .percentageAvailable(((Number) result[5]).doubleValue())
+                        .build())
+                .collect(Collectors.toList());
+
         return EventStatisticsDTO.builder()
                 .eventId(event.getId())
                 .eventName(event.getName())
@@ -743,6 +756,7 @@ public class EventServiceImpl implements EventService {
                 .soldTickets(soldTickets)
                 .occupancyRate(occupancyRate)
                 .statusName(event.getStatus().getName())
+                .sectionStatistics(sectionStatistics)
                 .build();
     }
 

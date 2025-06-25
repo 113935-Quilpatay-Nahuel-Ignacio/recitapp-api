@@ -36,4 +36,27 @@ public interface TicketPriceRepository extends JpaRepository<TicketPrice, Long> 
      */
     @Query("SELECT CASE WHEN COUNT(tp) > 0 THEN true ELSE false END FROM TicketPrice tp WHERE tp.section.id = :sectionId")
     boolean existsBySectionId(@Param("sectionId") Long sectionId);
+    
+    /**
+     * Obtiene estadísticas por sección para un evento específico
+     */
+    @Query(value = """
+        SELECT 
+            tp.section_id as sectionId,
+            vs.name as sectionName,
+            SUM(tp.available_quantity) as totalTicketsForSale,
+            COALESCE(COUNT(t.id), 0) as ticketsSold,
+            SUM(tp.available_quantity) - COALESCE(COUNT(t.id), 0) as ticketsRemaining,
+            ROUND(
+                ((SUM(tp.available_quantity) - COALESCE(COUNT(t.id), 0)) * 100.0) / SUM(tp.available_quantity), 
+                2
+            ) as percentageAvailable
+        FROM ticket_prices tp
+        LEFT JOIN tickets t ON t.event_id = tp.event_id AND t.section_id = tp.section_id
+        JOIN venue_sections vs ON vs.id = tp.section_id
+        WHERE tp.event_id = :eventId
+        GROUP BY tp.section_id, vs.name
+        ORDER BY tp.section_id
+    """, nativeQuery = true)
+    List<Object[]> getSectionStatisticsByEventId(@Param("eventId") Long eventId);
 }
