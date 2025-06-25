@@ -21,16 +21,27 @@ public class RefreshTokenService {
     @Value("${jwt.refresh.expiration:604800000}") // 7 días por defecto
     private long refreshTokenExpiration;
 
+    @Value("${jwt.refresh.expiration.remember:7776000000}") // 90 días para remember me
+    private long refreshTokenExpirationRemember;
+
     @Transactional
     public RefreshToken createRefreshToken(User user) {
+        return createRefreshToken(user, false);
+    }
+
+    @Transactional
+    public RefreshToken createRefreshToken(User user, boolean rememberMe) {
         // Revocar todos los tokens existentes del usuario
         revokeAllUserTokens(user);
+
+        // Determinar duración del token basado en rememberMe
+        long expiration = rememberMe ? refreshTokenExpirationRemember : refreshTokenExpiration;
 
         // Crear nuevo refresh token
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(UUID.randomUUID().toString())
                 .user(user)
-                .expiryDate(LocalDateTime.now().plusSeconds(refreshTokenExpiration / 1000))
+                .expiryDate(LocalDateTime.now().plusSeconds(expiration / 1000))
                 .revoked(false)
                 .build();
 

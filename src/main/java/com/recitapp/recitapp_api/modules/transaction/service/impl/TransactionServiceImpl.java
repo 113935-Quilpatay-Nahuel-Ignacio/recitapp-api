@@ -302,6 +302,15 @@ public class TransactionServiceImpl implements TransactionService {
 
         transactionDetailRepository.saveAll(refundDetails);
 
+        // Update user's wallet balance with refund amount
+        User user = originalTransaction.getUser();
+        Double currentWalletBalance = user.getWalletBalance() != null ? user.getWalletBalance() : 0.0;
+        user.setWalletBalance(currentWalletBalance + refundAmount.doubleValue());
+        userRepository.save(user);
+
+        log.info("Added refund amount {} to user {} wallet balance. New balance: {}", 
+                refundAmount, user.getId(), user.getWalletBalance());
+
         return mapToDTO(savedRefundTransaction);
     }
 
@@ -681,11 +690,16 @@ public class TransactionServiceImpl implements TransactionService {
 
         List<TransactionDetail> details = transactionDetailRepository.findByTransactionId(transaction.getId());
         for (TransactionDetail detail : details) {
+            Ticket ticket = detail.getTicket();
+            boolean isRefunded = "CANCELADA".equals(ticket.getStatus().getName());
+            
             TransactionDetailDTO detailDTO = TransactionDetailDTO.builder()
-                    .ticketId(detail.getTicket().getId())
-                    .ticketCode(detail.getTicket().getIdentificationCode())
-                    .eventName(detail.getTicket().getEvent().getName())
+                    .ticketId(ticket.getId())
+                    .ticketCode(ticket.getIdentificationCode())
+                    .eventName(ticket.getEvent().getName())
                     .unitPrice(detail.getUnitPrice())
+                    .ticketStatus(ticket.getStatus().getName())
+                    .isRefunded(isRefunded)
                     .build();
 
             detailDTOs.add(detailDTO);

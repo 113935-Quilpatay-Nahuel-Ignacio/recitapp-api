@@ -39,6 +39,9 @@ public class AuthService {
     @Value("${jwt.expiration:86400000}") // 24 horas por defecto
     private long jwtExpiration;
 
+    @Value("${jwt.expiration.remember:2592000000}") // 30 días para remember me
+    private long jwtExpirationRemember;
+
     public AuthResponse login(LoginRequest request) {
         try {
             // Autenticar al usuario
@@ -57,11 +60,14 @@ public class AuthService {
             user.setLastConnection(LocalDateTime.now());
             userRepository.save(user);
 
-            // Generar token JWT
-            String token = jwtService.generateToken(userDetails);
+            // Determinar duración del token basado en rememberMe
+            long tokenExpiration = request.isRememberMe() ? jwtExpirationRemember : jwtExpiration;
+            
+            // Generar token JWT con duración apropiada
+            String token = jwtService.generateTokenWithExpiration(userDetails, tokenExpiration);
 
-            // Generar refresh token
-            RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+            // Generar refresh token con duración extendida si rememberMe es true
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(user, request.isRememberMe());
 
             // Construir respuesta
             return AuthResponse.builder()
@@ -73,7 +79,7 @@ public class AuthService {
                     .firstName(user.getFirstName())
                     .lastName(user.getLastName())
                     .role(user.getRole().getName())
-                    .expiresIn(jwtExpiration)
+                    .expiresIn(tokenExpiration)
                     .refreshExpiresIn(refreshTokenService.getRefreshTokenExpiration())
                     .build();
 

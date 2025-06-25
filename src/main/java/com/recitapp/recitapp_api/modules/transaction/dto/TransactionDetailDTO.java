@@ -16,4 +16,6 @@ public class TransactionDetailDTO {
     private String ticketCode;
     private String eventName;
     private BigDecimal unitPrice;
+    private String ticketStatus; // Status of the ticket (VENDIDA, CANCELADA, etc.)
+    private Boolean isRefunded; // Whether this ticket has been refunded
 }

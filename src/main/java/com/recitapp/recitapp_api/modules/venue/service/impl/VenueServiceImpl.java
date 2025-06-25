@@ -11,6 +11,8 @@ import com.recitapp.recitapp_api.modules.venue.repository.VenueRepository;
 import com.recitapp.recitapp_api.modules.venue.repository.VenueSectionRepository;
 import com.recitapp.recitapp_api.modules.venue.service.VenueService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -471,6 +473,24 @@ public class VenueServiceImpl implements VenueService {
     @Override
     public boolean existsById(Long id) {
         return venueRepository.existsById(id);
+    }
+
+    @Override
+    public Page<VenueDTO> getVenuesPaginated(Pageable pageable, String search, Boolean activeOnly) {
+        Page<Venue> venuePage;
+        
+        if (search != null && !search.trim().isEmpty()) {
+            // Usar búsqueda con filtros
+            venuePage = venueRepository.findVenuesWithFilters(search.trim(), activeOnly, pageable);
+        } else if (activeOnly) {
+            // Solo venues activos
+            venuePage = venueRepository.findByActiveTrue(pageable);
+        } else {
+            // Todos los venues
+            venuePage = venueRepository.findAll(pageable);
+        }
+        
+        return venuePage.map(this::mapToDTO);
     }
 
     // Métodos auxiliares

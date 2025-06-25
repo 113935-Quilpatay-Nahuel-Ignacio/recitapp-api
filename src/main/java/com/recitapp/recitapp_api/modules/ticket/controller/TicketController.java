@@ -4,6 +4,9 @@ import com.recitapp.recitapp_api.modules.ticket.dto.*;
 import com.recitapp.recitapp_api.modules.ticket.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,6 +45,18 @@ public class TicketController {
         return ResponseEntity.ok(tickets);
     }
 
+    // Endpoint paginado para tickets de usuario
+    @GetMapping("/user/{userId}/paginated")
+    public ResponseEntity<Page<TicketDTO>> getUserTicketsPaginated(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<TicketDTO> tickets = ticketService.getUserTicketsPaginated(userId, pageable);
+        return ResponseEntity.ok(tickets);
+    }
+
     @GetMapping("/event/{eventId}/section/{sectionId}")
     public ResponseEntity<List<TicketDTO>> getTicketsByEventAndSection(
             @PathVariable Long eventId, @PathVariable Long sectionId) {
@@ -55,24 +70,24 @@ public class TicketController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/validate")
-    public ResponseEntity<Boolean> validateTicket(
-            @PathVariable Long id, @RequestParam String qrCode) {
-        boolean isValid = ticketService.validateTicket(id, qrCode);
-        return ResponseEntity.ok(isValid);
-    }
-
-    @PostMapping("/validate-by-code")
-    public ResponseEntity<Boolean> validateTicketByCode(
-            @RequestParam String identificationCode) {
-        boolean isValid = ticketService.validateTicketByCode(identificationCode);
-        return ResponseEntity.ok(isValid);
-    }
-
     @PostMapping("/{id}/generate-qr")
     public ResponseEntity<String> generateQRCode(@PathVariable Long id) {
         String qrCode = ticketService.generateTicketQR(id);
         return ResponseEntity.ok(qrCode);
+    }
+
+    @PostMapping("/{ticketId}/validate")
+    public ResponseEntity<Boolean> validateTicket(
+            @PathVariable Long ticketId,
+            @RequestParam String qrCode) {
+        boolean isValid = ticketService.validateTicket(ticketId, qrCode);
+        return ResponseEntity.ok(isValid);
+    }
+
+    @PostMapping("/validate-by-code/{identificationCode}")
+    public ResponseEntity<Boolean> validateTicketByCode(@PathVariable String identificationCode) {
+        boolean isValid = ticketService.validateTicketByCode(identificationCode);
+        return ResponseEntity.ok(isValid);
     }
 
     @PostMapping("/{id}/transfer")
@@ -103,5 +118,4 @@ public class TicketController {
         TicketDTO updatedTicket = ticketService.updateTicketAssignment(ticketId, assignmentDTO);
         return ResponseEntity.ok(updatedTicket);
     }
-
 }

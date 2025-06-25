@@ -6,6 +6,9 @@ import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 public interface VenueService {
     VenueDTO createVenue(VenueDTO venueDTO);
 
@@ -35,4 +38,6 @@ public interface VenueService {
     List<VenueDTO> getAllVenues(Boolean activeOnly);
     List<VenueDTO> searchVenuesByName(String name);
     boolean existsById(Long id);
+
+    Page<VenueDTO> getVenuesPaginated(Pageable pageable, String search, Boolean activeOnly);
 }

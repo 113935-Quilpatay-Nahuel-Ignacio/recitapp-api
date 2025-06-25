@@ -32,6 +32,8 @@ import com.recitapp.recitapp_api.modules.venue.repository.VenueSectionRepository
 import com.recitapp.recitapp_api.modules.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -690,5 +692,15 @@ public class TicketServiceImpl implements TicketService {
                         eventId, e.getMessage());
             }
         }
+    }
+
+    @Override
+    public Page<TicketDTO> getUserTicketsPaginated(Long userId, Pageable pageable) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado con ID: " + userId));
+        
+        Page<Ticket> ticketPage = ticketRepository.findByUserOrderByPurchaseDateDesc(user, pageable);
+        
+        return ticketPage.map(this::mapToTicketDTO);
     }
 }

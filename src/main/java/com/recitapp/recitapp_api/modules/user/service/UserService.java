@@ -16,4 +16,5 @@ public interface UserService {
     UserResponseDTO updateUser(Long id, UserUpdateDTO updateDTO);
     void deleteUser(Long id);
     Map<String, Object> getUserRelatedDataSummary(Long id);
+    boolean validateCurrentPassword(Long userId, String currentPassword);
 }

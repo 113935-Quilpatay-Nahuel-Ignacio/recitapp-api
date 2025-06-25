@@ -78,6 +78,14 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserRelatedDataSummary(id));
     }
 
+    @PostMapping("/{id}/validate-password")
+    @Operation(summary = "Validar contraseña actual", description = "Valida la contraseña actual del usuario antes de permitir cambios")
+    public ResponseEntity<Map<String, Boolean>> validateCurrentPassword(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        String currentPassword = request.get("currentPassword");
+        boolean isValid = userService.validateCurrentPassword(id, currentPassword);
+        return ResponseEntity.ok(Map.of("valid", isValid));
+    }
+
     @GetMapping("/{userId}/purchases")
     public ResponseEntity<List<PurchaseHistoryDTO>> getUserPurchaseHistory(@PathVariable Long userId) {
         List<PurchaseHistoryDTO> purchaseHistory = purchaseHistoryService.getUserPurchaseHistory(userId);

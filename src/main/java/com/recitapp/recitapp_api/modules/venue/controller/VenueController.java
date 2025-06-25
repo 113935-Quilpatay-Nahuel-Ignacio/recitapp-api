@@ -5,6 +5,9 @@ import com.recitapp.recitapp_api.modules.venue.dto.*;
 import com.recitapp.recitapp_api.modules.venue.service.VenueService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -165,5 +168,17 @@ public class VenueController {
             List<VenueDTO> venues = venueService.getAllVenues(activeOnly);
             return ResponseEntity.ok(venues);
         }
+    }
+
+    @GetMapping("/paginated")
+    public ResponseEntity<Page<VenueDTO>> getVenuesPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false, defaultValue = "true") Boolean activeOnly) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<VenueDTO> venues = venueService.getVenuesPaginated(pageable, search, activeOnly);
+        return ResponseEntity.ok(venues);
     }
 }

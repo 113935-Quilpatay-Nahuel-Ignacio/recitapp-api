@@ -7,6 +7,9 @@ import com.recitapp.recitapp_api.modules.ticket.dto.TicketPurchaseResponseDTO;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 public interface TicketService {
     TicketPurchaseResponseDTO purchaseTickets(TicketPurchaseRequestDTO purchaseRequest);
 
@@ -37,4 +40,9 @@ public interface TicketService {
                                      String recipientFirstName,
                                      String recipientLastName,
                                      String recipientDni);
+
+    /**
+     * Get paginated tickets for a specific user
+     */
+    Page<TicketDTO> getUserTicketsPaginated(Long userId, Pageable pageable);
 }

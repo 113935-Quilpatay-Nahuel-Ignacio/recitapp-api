@@ -12,6 +12,7 @@ import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
 import com.recitapp.recitapp_api.modules.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -166,7 +168,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (updateDTO.getPassword() != null && !updateDTO.getPassword().isEmpty()) {
-            user.setPassword(updateDTO.getPassword());
+            user.setPassword(passwordEncoder.encode(updateDTO.getPassword()));
         }
 
         User updatedUser = userRepository.save(user);
@@ -328,6 +330,14 @@ public class UserServiceImpl implements UserService {
         summary.put("deletionImpact", totalRelatedRecords > 10 ? "ALTO" : totalRelatedRecords > 5 ? "MEDIO" : "BAJO");
         
         return summary;
+    }
+
+    @Override
+    public boolean validateCurrentPassword(Long userId, String currentPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RecitappException("Usuario no encontrado con ID: " + userId));
+        
+        return passwordEncoder.matches(currentPassword, user.getPassword());
     }
 
     private UserResponseDTO mapToResponseDTO(User user) {

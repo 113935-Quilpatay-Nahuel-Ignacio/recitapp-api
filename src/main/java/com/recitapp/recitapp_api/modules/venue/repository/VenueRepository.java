@@ -1,6 +1,8 @@
 package com.recitapp.recitapp_api.modules.venue.repository;
 
 import com.recitapp.recitapp_api.modules.venue.entity.Venue;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -41,4 +43,16 @@ public interface VenueRepository extends JpaRepository<Venue, Long> {
     List<Venue> findVenuesNearby(@Param("lat") double latitude,
                                  @Param("lng") double longitude,
                                  @Param("radiusMeters") double radiusInMeters);
+
+    Page<Venue> findByActiveTrue(Pageable pageable);
+
+    Page<Venue> findAll(Pageable pageable);
+
+    @Query("SELECT v FROM Venue v WHERE " +
+           "(:search IS NULL OR LOWER(v.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(v.address) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+           "(:activeOnly = false OR v.active = true)")
+    Page<Venue> findVenuesWithFilters(@Param("search") String search, 
+                                      @Param("activeOnly") Boolean activeOnly, 
+                                      Pageable pageable);
 }
