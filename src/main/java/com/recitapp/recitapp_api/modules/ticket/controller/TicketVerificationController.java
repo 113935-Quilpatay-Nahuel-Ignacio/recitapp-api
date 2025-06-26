@@ -7,14 +7,19 @@ import com.recitapp.recitapp_api.modules.ticket.entity.TicketVerification;
 import com.recitapp.recitapp_api.modules.ticket.service.impl.TicketVerificationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * Controller for ticket verification operations
+ * Controller for ticket verification and QR validation
  */
+@Slf4j
 @RestController
 @RequestMapping("/tickets/verification")
 @RequiredArgsConstructor
@@ -33,7 +38,15 @@ public class TicketVerificationController {
     public ResponseEntity<TicketVerificationResponseDTO> verifyTicket(
             @Valid @RequestBody TicketVerificationRequestDTO requestDTO) {
 
+        // Log access for debugging VERIFICADOR_ENTRADAS
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            log.info("🎫 Ticket verification accessed by user: {} (VERIFICADOR_ENTRADAS functionality)", userDetails.getUsername());
+        }
+
         TicketVerificationResponseDTO response = verificationService.verifyTicket(requestDTO);
+        log.info("✅ Ticket verification completed successfully");
         return ResponseEntity.ok(response);
     }
 

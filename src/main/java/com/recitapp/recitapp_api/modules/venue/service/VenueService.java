@@ -21,6 +21,23 @@ public interface VenueService {
     List<VenueDTO> getAvailableVenues(LocalDateTime startDateTime, LocalDateTime endDateTime);
     VenueAvailabilityDTO checkVenueAvailability(Long venueId, LocalDateTime startDateTime, LocalDateTime endDateTime);
 
+    /**
+     * Obtiene eventos por recinto (venue) con filtrado de verificación
+     *
+     * @param venueId ID del recinto
+     * @param includePastEvents Si incluir eventos pasados
+     * @param canViewUnverifiedEvents Si el usuario puede ver eventos no verificados
+     * @return Lista de DTOs con información de los eventos
+     */
+    List<EventDTO> getVenueEvents(Long venueId, Boolean includePastEvents, boolean canViewUnverifiedEvents);
+
+    /**
+     * Obtiene eventos por recinto (venue)
+     *
+     * @param venueId ID del recinto
+     * @param includePastEvents Si incluir eventos pasados
+     * @return Lista de DTOs con información de los eventos
+     */
     List<EventDTO> getVenueEvents(Long venueId, Boolean includePastEvents);
 
     VenueStatisticsDTO getVenueStatistics(Long venueId);

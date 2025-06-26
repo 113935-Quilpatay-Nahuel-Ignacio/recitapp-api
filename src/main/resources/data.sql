@@ -187,9 +187,9 @@ INSERT IGNORE INTO users (role_id, email, password, first_name, last_name, dni, 
 -- ================================================================================
 -- Los siguientes usuarios tienen dominios especiales que asignan roles automáticamente:
 -- 
--- @recitapp-admin.com     → Rol ADMIN (ID: 1)
--- @recitapp-moderator.com → Rol MODERADOR (ID: 2)  
--- @recitapp-verifier.com  → Rol REGISTRADOR_EVENTO (ID: 3)
+-- @recitapp-admin.com        → Rol ADMIN (ID: 1)
+-- @recitapp-moderator.com    → Rol MODERADOR (ID: 2)  
+-- @recitapp-registrator.com  → Rol REGISTRADOR_EVENTO (ID: 3)
 -- 
 -- Al registrarse a través del endpoint /users/register, automáticamente se les asignará el rol correspondiente
 -- Nota: Estos usuarios están comentados porque se crearán a través del endpoint de registro
@@ -213,10 +213,10 @@ INSERT IGNORE INTO users (role_id, email, password, first_name, last_name, dni, 
 -- ================================================================================
 -- EJEMPLOS DE USUARIOS QUE OBTENDRÁN ROL REGISTRADOR_EVENTO AUTOMÁTICAMENTE:
 -- ================================================================================
--- verificador@recitapp-verifier.com (password: verify123)
--- verifier.principal@recitapp-verifier.com (password: verifier123)
--- registrador.eventos@recitapp-verifier.com (password: eventos123)
--- test.verifier@recitapp-verifier.com (password: test123)
+-- registrador@recitapp-registrator.com (password: registrar123)
+-- registrator.principal@recitapp-registrator.com (password: registrator123)
+-- registrador.eventos@recitapp-registrator.com (password: eventos123)
+-- test.registrator@recitapp-registrator.com (password: test123)
 
 -- ================================================================================
 -- INSTRUCCIONES DE PRUEBA:
@@ -225,7 +225,7 @@ INSERT IGNORE INTO users (role_id, email, password, first_name, last_name, dni, 
 -- 
 -- 1. Email terminado en @recitapp-admin.com → Obtendrá rol ADMIN
 -- 2. Email terminado en @recitapp-moderator.com → Obtendrá rol MODERADOR  
--- 3. Email terminado en @recitapp-verifier.com → Obtendrá rol REGISTRADOR_EVENTO
+-- 3. Email terminado en @recitapp-registrator.com → Obtendrá rol REGISTRADOR_EVENTO
 -- 4. Cualquier otro email → Obtendrá rol COMPRADOR por defecto
 
 SELECT 'Script de inicialización de datos ejecutado correctamente' AS mensaje;
@@ -291,7 +291,7 @@ INSERT IGNORE INTO users (role_id, email, password, first_name, last_name, dni, 
 -- USUARIOS REGISTRADORES DE EVENTOS
 -- ================================================================================
 
--- registrador@recitapp.com | Contraseña: registrador123
+-- registrador@recitapp.com | Contraseña: registrar123
 INSERT IGNORE INTO users (role_id, email, password, first_name, last_name, dni, registration_date, active, auth_method, wallet_balance) VALUES
 (3, 'registrador@recitapp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqKdvweR.1WR.xYp5YYKGT9/eoKO', 'Registrador', 'Eventos', '30000001', NOW(), true, 'EMAIL', 200.00);
 
@@ -350,7 +350,7 @@ MODERADORES:
 - mod@recitapp.com            | mod123
 
 REGISTRADORES DE EVENTOS:
-- registrador@recitapp.com    | registrador123
+- registrador@recitapp.com    | registrar123
 - registrador2@recitapp.com   | password
 - manager@recitapp.com        | manager123
 
@@ -366,7 +366,7 @@ COMPRADORES/USUARIOS:
 CONTRASEÑAS MÁS COMUNES:
 - password (múltiples usuarios)
 - admin123, moderador123, test123, demo123, guest123
-- 123456, super123, mod123, manager123, registrador123, comprador123
+- 123456, super123, mod123, manager123, registrar123, comprador123
 */
 
 -- ================================================================================

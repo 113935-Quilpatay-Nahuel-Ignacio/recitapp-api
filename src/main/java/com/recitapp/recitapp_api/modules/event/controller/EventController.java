@@ -57,6 +57,34 @@ public class EventController {
         return "ADMIN".equals(roleName) || "MODERADOR".equals(roleName) || "REGISTRADOR_EVENTO".equals(roleName);
     }
 
+    /**
+     * Verifica si el usuario actual puede editar/eliminar el evento (ADMIN, MODERADOR o propietario si es REGISTRADOR_EVENTO)
+     */
+    private boolean canModifyEvent(User user, Long eventId) {
+        if (user == null || user.getRole() == null) {
+            return false;
+        }
+        
+        String roleName = user.getRole().getName();
+        
+        // ADMIN y MODERADOR pueden modificar cualquier evento
+        if ("ADMIN".equals(roleName) || "MODERADOR".equals(roleName)) {
+            return true;
+        }
+        
+        // REGISTRADOR_EVENTO solo puede modificar eventos que creó
+        if ("REGISTRADOR_EVENTO".equals(roleName)) {
+            try {
+                EventDTO event = eventService.getEventForEdit(eventId);
+                return event.getRegistrarId().equals(user.getId());
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        
+        return false;
+    }
+
     @PostMapping
     @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<EventDTO> createEvent(@Valid @RequestBody EventDTO eventDTO,
@@ -86,16 +114,28 @@ public class EventController {
     }
 
     @PutMapping("/{id}")
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
+    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<EventDTO> updateEvent(@PathVariable Long id,
                                                 @Valid @RequestBody EventDTO eventDTO) {
+        
+        User currentUser = getCurrentUser();
+        if (!canModifyEvent(currentUser, id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
         EventDTO updatedEvent = eventService.updateEvent(id, eventDTO);
         return ResponseEntity.ok(updatedEvent);
     }
 
     @DeleteMapping("/{id}")
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
+    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
+        
+        User currentUser = getCurrentUser();
+        if (!canModifyEvent(currentUser, id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
         eventService.deleteEvent(id);
         return ResponseEntity.noContent().build();
     }
@@ -107,8 +147,14 @@ public class EventController {
     }
 
     @GetMapping("/{id}/edit")
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
+    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<EventDTO> getEventForEdit(@PathVariable Long id) {
+        
+        User currentUser = getCurrentUser();
+        if (!canModifyEvent(currentUser, id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
         EventDTO event = eventService.getEventForEdit(id);
         return ResponseEntity.ok(event);
     }

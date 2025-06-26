@@ -3,6 +3,8 @@ package com.recitapp.recitapp_api.modules.venue.controller;
 import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
 import com.recitapp.recitapp_api.modules.venue.dto.*;
 import com.recitapp.recitapp_api.modules.venue.service.VenueService;
+import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
+import com.recitapp.recitapp_api.modules.user.entity.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -12,10 +14,14 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/venues")
@@ -23,6 +29,32 @@ import java.util.List;
 public class VenueController {
 
     private final VenueService venueService;
+    private final UserRepository userRepository;
+
+    /**
+     * Obtiene el usuario actual autenticado
+     */
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String email = userDetails.getUsername();
+            return userRepository.findByEmail(email)
+                    .orElse(null);
+        }
+        return null;
+    }
+
+    /**
+     * Verifica si el usuario actual puede ver eventos no verificados
+     */
+    private boolean canViewUnverifiedEvents(User user) {
+        if (user == null || user.getRole() == null) {
+            return false;
+        }
+        String roleName = user.getRole().getName();
+        return "ADMIN".equals(roleName) || "MODERADOR".equals(roleName) || "REGISTRADOR_EVENTO".equals(roleName);
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -80,7 +112,9 @@ public class VenueController {
     public ResponseEntity<List<EventDTO>> getVenueEvents(
             @PathVariable Long id,
             @RequestParam(required = false, defaultValue = "false") Boolean includePastEvents) {
-        List<EventDTO> events = venueService.getVenueEvents(id, includePastEvents);
+        User currentUser = getCurrentUser();
+        boolean canViewUnverified = canViewUnverifiedEvents(currentUser);
+        List<EventDTO> events = venueService.getVenueEvents(id, includePastEvents, canViewUnverified);
         return ResponseEntity.ok(events);
     }
 

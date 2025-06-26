@@ -207,7 +207,7 @@ public class VenueServiceImpl implements VenueService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<EventDTO> getVenueEvents(Long venueId, Boolean includePastEvents) {
+    public List<EventDTO> getVenueEvents(Long venueId, Boolean includePastEvents, boolean canViewUnverifiedEvents) {
         findVenueById(venueId); // Verificar que existe
 
         List<Event> events;
@@ -218,8 +218,16 @@ public class VenueServiceImpl implements VenueService {
         }
 
         return events.stream()
+                .filter(event -> canViewUnverifiedEvents || event.getVerified())
                 .map(this::mapEventToDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EventDTO> getVenueEvents(Long venueId, Boolean includePastEvents) {
+        // Por defecto, permitir ver eventos no verificados (comportamiento anterior)
+        return getVenueEvents(venueId, includePastEvents, true);
     }
 
     @Override
