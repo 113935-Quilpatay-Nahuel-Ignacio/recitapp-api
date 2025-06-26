@@ -454,6 +454,15 @@ public class EventServiceImpl implements EventService {
         detailDTO.setUpdatedAt(event.getUpdatedAt());
         detailDTO.setArtistIds(artistIds);
 
+        // Agregar IDs de moderador y registrador si están disponibles
+        if (event.getModerator() != null) {
+            detailDTO.setModeratorId(event.getModerator().getId());
+        }
+
+        if (event.getRegistrar() != null) {
+            detailDTO.setRegistrarId(event.getRegistrar().getId());
+        }
+
         // 🖼️ LOG DETALLADO: Información de imágenes
         log.info("🖼️ [IMAGE DEBUG] Event ID: {} - Image URLs returned:", eventId);
         log.info("🖼️ [IMAGE DEBUG] flyerImage: '{}'", event.getFlyerImage());
@@ -923,6 +932,18 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional(readOnly = true)
     public EventDTO convertToDTO(Event event) {
+        return mapToDTO(event);
+    }
+
+    /**
+     * Obtiene los detalles de un evento como EventDTO (para endpoint público)
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public EventDTO getEventDetailAsDTO(Long eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> EntityNotFoundException.create("Evento", eventId));
+        
         return mapToDTO(event);
     }
 }

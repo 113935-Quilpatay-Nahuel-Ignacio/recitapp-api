@@ -35,6 +35,10 @@ public class EventDetailDTO {
     private LocalDateTime registrationDate;
     private LocalDateTime updatedAt;
 
+    // IDs para verificación de permisos
+    private Long moderatorId;
+    private Long registrarId;
+
     // IDs de artistas adicionales
     private List<Long> artistIds;
 

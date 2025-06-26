@@ -157,4 +157,12 @@ public interface EventService {
      */
     EventDTO convertToDTO(Event event);
 
+    /**
+     * Obtiene los detalles de un evento como EventDTO (para endpoint público)
+     *
+     * @param eventId ID del evento
+     * @return EventDTO con información del evento
+     */
+    EventDTO getEventDetailAsDTO(Long eventId);
+
 }

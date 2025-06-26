@@ -141,8 +141,8 @@ public class EventController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<EventDetailDTO> getEventDetail(@PathVariable Long id) {
-        EventDetailDTO eventDetail = eventService.getEventDetail(id);
+    public ResponseEntity<EventDTO> getEventDetail(@PathVariable Long id) {
+        EventDTO eventDetail = eventService.getEventDetailAsDTO(id);
         return ResponseEntity.ok(eventDetail);
     }
 
