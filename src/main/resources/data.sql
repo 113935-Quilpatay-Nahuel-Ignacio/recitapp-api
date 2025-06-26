@@ -3,7 +3,8 @@ VALUES
     ('ADMIN', 'Administrador del sistema con acceso completo a todas las funcionalidades'),
     ('MODERADOR', 'Moderador de eventos que verifica la legitimidad de eventos y los publica para compradores'),
     ('REGISTRADOR_EVENTO', 'Usuario que puede crear y configurar eventos (manager, organizador, artista)'),
-    ('COMPRADOR', 'Usuario estándar que puede buscar, comprar entradas y seguir artistas/eventos');
+    ('COMPRADOR', 'Usuario estándar que puede buscar, comprar entradas y seguir artistas/eventos'),
+    ('VERIFICADOR_ENTRADAS', 'Usuario especializado en verificar códigos QR de entradas en eventos');
 
 INSERT IGNORE INTO event_statuses (name, description)
 VALUES

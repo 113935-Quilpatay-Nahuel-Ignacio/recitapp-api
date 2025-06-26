@@ -167,6 +167,10 @@ public class AuthService {
             userRole = roleRepository.findByName("REGISTRADOR_EVENTO")
                     .orElseThrow(() -> new RuntimeException("Rol REGISTRADOR_EVENTO no encontrado"));
             log.info("📝 ASIGNACIÓN AUTOMÁTICA: Rol REGISTRADOR_EVENTO asignado al email: {}", request.getEmail());
+        } else if (email.endsWith("@recitapp-ticket-validator.com")) {
+            userRole = roleRepository.findByName("VERIFICADOR_ENTRADAS")
+                    .orElseThrow(() -> new RuntimeException("Rol VERIFICADOR_ENTRADAS no encontrado"));
+            log.info("🎫 ASIGNACIÓN AUTOMÁTICA: Rol VERIFICADOR_ENTRADAS asignado al email: {}", request.getEmail());
         } else {
             userRole = roleRepository.findByName("COMPRADOR")
                     .orElseThrow(() -> new RuntimeException("Rol COMPRADOR no encontrado"));

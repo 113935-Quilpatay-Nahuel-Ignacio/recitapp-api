@@ -32,10 +32,10 @@ public class UserRegistrationRequest {
     private String lastName;
 
     @NotBlank(message = "El DNI es obligatorio")
-    @Pattern(regexp = "^[0-9]{8}$", message = "El DNI debe tener 8 digitos")
+    @Pattern(regexp = "^[0-9]{7,9}$", message = "El DNI debe tener entre 7 y 9 digitos")
     private String dni;
 
-    @Pattern(regexp = "^[+]?[0-9]{10,15}$", message = "El formato del telefono no es valido")
+    @Pattern(regexp = "^\\+[1-9][0-9]{9,14}$", message = "El telefono debe comenzar con '+' seguido del codigo de pais y numero (ej: +541112345678)")
     private String phone;
 
     private String address;

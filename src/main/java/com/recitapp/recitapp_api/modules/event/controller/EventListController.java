@@ -3,9 +3,16 @@ package com.recitapp.recitapp_api.modules.event.controller;
 import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
 import com.recitapp.recitapp_api.modules.event.dto.EventFilterDTO;
 import com.recitapp.recitapp_api.modules.event.service.EventService;
+import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
+import com.recitapp.recitapp_api.modules.user.entity.User;
+import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
+import com.recitapp.recitapp_api.modules.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -20,6 +27,43 @@ import java.util.List;
 public class EventListController {
 
     private final EventService eventService;
+    private final UserRepository userRepository;
+
+    /**
+     * Obtiene el usuario actual autenticado
+     */
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String email = userDetails.getUsername();
+            return userRepository.findByEmail(email)
+                    .orElse(null);
+        }
+        return null;
+    }
+
+    /**
+     * Verifica si el usuario actual puede ver eventos no verificados
+     */
+    private boolean canViewUnverifiedEvents(User user) {
+        if (user == null || user.getRole() == null) {
+            return false;
+        }
+        String roleName = user.getRole().getName();
+        return "ADMIN".equals(roleName) || "MODERADOR".equals(roleName) || "REGISTRADOR_EVENTO".equals(roleName);
+    }
+
+    /**
+     * Aplica filtros de verificación según el rol del usuario
+     */
+    private EventFilterDTO applyRoleBasedFilters(EventFilterDTO filter) {
+        User currentUser = getCurrentUser();
+        if (!canViewUnverifiedEvents(currentUser)) {
+            filter.setVerified(true);
+        }
+        return filter;
+    }
 
     /**
      * Emite un listado de eventos por fecha

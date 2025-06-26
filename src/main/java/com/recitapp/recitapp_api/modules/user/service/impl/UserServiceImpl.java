@@ -59,6 +59,10 @@ public class UserServiceImpl implements UserService {
             userRole = roleRepository.findByName("REGISTRADOR_EVENTO")
                     .orElseThrow(() -> new RecitappException("Rol REGISTRADOR_EVENTO no encontrado"));
             log.info("📝 ASIGNACIÓN AUTOMÁTICA: Rol REGISTRADOR_EVENTO asignado al email: {}", registrationDTO.getEmail());
+        } else if (email.endsWith("@recitapp-ticket-validator.com")) {
+            userRole = roleRepository.findByName("VERIFICADOR_ENTRADAS")
+                    .orElseThrow(() -> new RecitappException("Rol VERIFICADOR_ENTRADAS no encontrado"));
+            log.info("🎫 ASIGNACIÓN AUTOMÁTICA: Rol VERIFICADOR_ENTRADAS asignado al email: {}", registrationDTO.getEmail());
         } else {
             userRole = roleRepository.findByName("COMPRADOR")
                     .orElseThrow(() -> new RecitappException("Rol COMPRADOR no encontrado"));

@@ -7,10 +7,15 @@ import com.recitapp.recitapp_api.modules.event.dto.EventDetailDTO;
 import com.recitapp.recitapp_api.modules.event.dto.EventFilterDTO;
 import com.recitapp.recitapp_api.modules.event.dto.EventStatisticsDTO;
 import com.recitapp.recitapp_api.modules.event.service.EventService;
+import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
+import com.recitapp.recitapp_api.modules.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +30,32 @@ public class EventController {
 
     private final EventService eventService;
     private final FileStorageService fileStorageService;
+    private final UserRepository userRepository;
+
+    /**
+     * Obtiene el usuario actual autenticado
+     */
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String email = userDetails.getUsername();
+            return userRepository.findByEmail(email)
+                    .orElse(null);
+        }
+        return null;
+    }
+
+    /**
+     * Verifica si el usuario actual puede ver eventos no verificados
+     */
+    private boolean canViewUnverifiedEvents(User user) {
+        if (user == null || user.getRole() == null) {
+            return false;
+        }
+        String roleName = user.getRole().getName();
+        return "ADMIN".equals(roleName) || "MODERADOR".equals(roleName) || "REGISTRADOR_EVENTO".equals(roleName);
+    }
 
     @PostMapping
     @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
@@ -85,8 +116,24 @@ public class EventController {
     @GetMapping
     public ResponseEntity<List<EventDTO>> getAllEvents(
             @RequestParam(required = false) Boolean upcomingOnly) {
-        List<EventDTO> events = eventService.getAllEvents(upcomingOnly);
-        return ResponseEntity.ok(events);
+
+        // Apply role-based filtering
+        User currentUser = getCurrentUser();
+        
+        // If user can't view unverified events, we need to filter
+        if (!canViewUnverifiedEvents(currentUser)) {
+            EventFilterDTO filterDTO = new EventFilterDTO();
+            filterDTO.setVerified(true);
+            if (upcomingOnly != null && upcomingOnly) {
+                filterDTO.setStartDate(LocalDateTime.now());
+            }
+            List<EventDTO> events = eventService.searchEvents(filterDTO);
+            return ResponseEntity.ok(events);
+        } else {
+            // For privileged users, use the original method
+            List<EventDTO> events = eventService.getAllEvents(upcomingOnly);
+            return ResponseEntity.ok(events);
+        }
     }
 
     @GetMapping("/search")
@@ -106,9 +153,18 @@ public class EventController {
         filterDTO.setVenueId(venueId);
         filterDTO.setArtistId(artistId);
         filterDTO.setStatusName(statusName);
-        filterDTO.setVerified(verified);
         filterDTO.setModeratorId(moderatorId);
         filterDTO.setRegistrarId(registrarId);
+
+        // Apply role-based filtering for event verification
+        User currentUser = getCurrentUser();
+        if (!canViewUnverifiedEvents(currentUser)) {
+            // For COMPRADOR and other non-privileged roles, only show verified events
+            filterDTO.setVerified(true);
+        } else {
+            // For ADMIN, MODERADOR, REGISTRADOR_EVENTO, use the requested filter or show all
+            filterDTO.setVerified(verified);
+        }
 
         List<EventDTO> events = eventService.searchEvents(filterDTO);
         return ResponseEntity.ok(events);

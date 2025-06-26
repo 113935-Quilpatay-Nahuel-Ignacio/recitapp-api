@@ -29,7 +29,7 @@ public class TicketVerificationController {
      * @return The verification result
      */
     @PostMapping("/verify")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
+    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO", "VERIFICADOR_ENTRADAS"})
     public ResponseEntity<TicketVerificationResponseDTO> verifyTicket(
             @Valid @RequestBody TicketVerificationRequestDTO requestDTO) {
 
@@ -44,7 +44,7 @@ public class TicketVerificationController {
      * @return A list of verification records
      */
     @GetMapping("/history/{ticketId}")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
+    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO", "VERIFICADOR_ENTRADAS"})
     public ResponseEntity<List<TicketVerification>> getTicketVerificationHistory(
             @PathVariable Long ticketId) {
 
