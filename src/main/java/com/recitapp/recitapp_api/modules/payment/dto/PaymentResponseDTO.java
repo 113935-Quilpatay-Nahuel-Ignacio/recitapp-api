@@ -24,6 +24,15 @@ public class PaymentResponseDTO {
     private Long transactionId;
     private String qrCodeData;
     
+    // Nuevos campos para manejo mejorado de estados
+    private String statusCode; // APRO, OTHE, CONT, etc.
+    private String statusDetail; // status_detail de MercadoPago
+    private String displayName; // Nombre legible del estado
+    private String userMessage; // Mensaje específico para el usuario
+    private boolean shouldDeliverTickets; // Si debe entregar entradas
+    private boolean canRetry; // Si el usuario puede reintentar
+    private String paymentId; // ID del pago en MercadoPago
+    
     // Wallet information
     private BigDecimal walletDiscountApplied;
     private BigDecimal amountAfterWallet;

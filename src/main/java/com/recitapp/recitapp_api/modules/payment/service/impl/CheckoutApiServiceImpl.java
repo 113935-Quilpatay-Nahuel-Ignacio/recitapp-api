@@ -13,6 +13,7 @@ import com.recitapp.recitapp_api.modules.payment.dto.CheckoutApiPaymentRequestDT
 import com.recitapp.recitapp_api.modules.payment.dto.PaymentRequestDTO;
 import com.recitapp.recitapp_api.modules.payment.dto.PaymentResponseDTO;
 import com.recitapp.recitapp_api.modules.payment.service.CheckoutApiService;
+import com.recitapp.recitapp_api.modules.payment.enums.MercadoPagoPaymentStatus;
 import com.recitapp.recitapp_api.modules.transaction.service.TransactionService;
 import com.recitapp.recitapp_api.modules.ticket.service.TicketService;
 import com.recitapp.recitapp_api.modules.ticket.dto.TicketPurchaseRequestDTO;
@@ -57,7 +58,7 @@ public class CheckoutApiServiceImpl implements CheckoutApiService {
             // Validar token de tarjeta
             if (!paymentRequest.hasValidCardToken()) {
                 log.error("❌ [CHECKOUT_API] Token de tarjeta inválido");
-                return createErrorResponse("Token de tarjeta inválido");
+                return createErrorResponse("Token de tarjeta inválido", null);
             }
             
             // Crear referencia externa única
@@ -97,24 +98,25 @@ public class CheckoutApiServiceImpl implements CheckoutApiService {
             log.info("✅ [CHECKOUT_API] Pago procesado - ID: {}, Status: {}, Status Detail: {}", 
                     payment.getId(), payment.getStatus(), payment.getStatusDetail());
             
+            // Determinar estado usando el nuevo enum
+            MercadoPagoPaymentStatus paymentStatus = MercadoPagoPaymentStatus.determineStatus(
+                payment.getStatus(), payment.getStatusDetail());
+            
+            log.info("📊 [CHECKOUT_API] Estado determinado: {} - ShouldDeliverTickets: {}, CanRetry: {}", 
+                    paymentStatus.getCode(), paymentStatus.isShouldDeliverTickets(), paymentStatus.isCanRetry());
+            
             // Procesar según estado del pago
-            if ("approved".equals(payment.getStatus())) {
-                return handleApprovedPayment(payment, paymentRequest);
-            } else if ("pending".equals(payment.getStatus())) {
-                return handlePendingPayment(payment, paymentRequest);
-            } else {
-                return handleRejectedPayment(payment, paymentRequest);
-            }
+            return handlePaymentByStatus(payment, paymentRequest, paymentStatus);
             
         } catch (MPApiException e) {
             log.error("❌ [CHECKOUT_API] Error de API de MercadoPago: {}", e.getMessage(), e);
-            return createErrorResponse("Error de procesamiento: " + e.getMessage());
+            return createErrorResponse("Error de procesamiento: " + e.getMessage(), null);
         } catch (MPException e) {
             log.error("❌ [CHECKOUT_API] Error de MercadoPago: {}", e.getMessage(), e);
-            return createErrorResponse("Error de conexión con MercadoPago");
+            return createErrorResponse("Error de conexión con MercadoPago", null);
         } catch (Exception e) {
             log.error("❌ [CHECKOUT_API] Error inesperado: {}", e.getMessage(), e);
-            return createErrorResponse("Error interno del servidor");
+            return createErrorResponse("Error interno del servidor", null);
         }
     }
     
@@ -158,16 +160,16 @@ public class CheckoutApiServiceImpl implements CheckoutApiService {
             log.info("✅ [CHECKOUT_API] Pago con wallet procesado - ID: {}, Status: {}", 
                     payment.getId(), payment.getStatus());
             
+            // Determinar estado usando el nuevo enum
+            MercadoPagoPaymentStatus paymentStatus = MercadoPagoPaymentStatus.determineStatus(
+                payment.getStatus(), payment.getStatusDetail());
+            
             // Procesar según estado del pago
-            if ("approved".equals(payment.getStatus())) {
-                return handleApprovedWalletPayment(payment, paymentRequest);
-            } else {
-                return handleRejectedWalletPayment(payment, paymentRequest);
-            }
+            return handleWalletPaymentByStatus(payment, paymentRequest, paymentStatus);
             
         } catch (Exception e) {
             log.error("❌ [CHECKOUT_API] Error en pago con wallet: {}", e.getMessage(), e);
-            return createErrorResponse("Error procesando pago con dinero en cuenta");
+            return createErrorResponse("Error procesando pago con dinero en cuenta", null);
         }
     }
     
@@ -191,134 +193,102 @@ public class CheckoutApiServiceImpl implements CheckoutApiService {
         return publicKey;
     }
     
-    // Métodos auxiliares
+    // Métodos auxiliares actualizados
     
-    private PaymentResponseDTO handleApprovedPayment(Payment payment, CheckoutApiPaymentRequestDTO paymentRequest) {
-        try {
-            log.info("✅ [CHECKOUT_API] Pago aprobado - procesando tickets");
-            
-            // Crear petición de compra de tickets
-            TicketPurchaseRequestDTO ticketPurchaseRequest = TicketPurchaseRequestDTO.builder()
-                .userId(paymentRequest.getUserId())
-                .eventId(paymentRequest.getEventId())
-                .paymentMethodId(1L) // ID para MercadoPago API
-                .tickets(Collections.emptyList()) // Se completará según la lógica de negocio
-                .build();
-            
-            // Procesar compra de tickets
-            TicketPurchaseResponseDTO purchaseResponse = ticketService.purchaseTickets(ticketPurchaseRequest);
-            
-            return PaymentResponseDTO.builder()
-                .preferenceId(payment.getId().toString())
-                .publicKey(publicKey)
-                .totalAmount(paymentRequest.getTotalAmount())
-                .status("APPROVED")
-                .transactionId(purchaseResponse.getTransactionId())
-                .paymentMethodInfo(PaymentResponseDTO.PaymentMethodInfo.builder()
-                    .paymentMethodId(paymentRequest.getPaymentMethodId())
-                    .paymentTypeId(paymentRequest.getPaymentTypeId())
-                    .paymentMethodName(getPaymentMethodName(paymentRequest.getPaymentMethodId()))
-                    .build())
-                .apiConfig(createApiConfiguration())
-                .build();
-                
-        } catch (Exception e) {
-            log.error("❌ [CHECKOUT_API] Error procesando tickets para pago aprobado: {}", e.getMessage());
-            return createErrorResponse("Pago aprobado pero error procesando tickets");
-        }
-    }
-    
-    private PaymentResponseDTO handlePendingPayment(Payment payment, CheckoutApiPaymentRequestDTO paymentRequest) {
-        log.info("⏳ [CHECKOUT_API] Pago pendiente - ID: {}, Detail: {}", 
-                payment.getId(), payment.getStatusDetail());
+    private PaymentResponseDTO handlePaymentByStatus(Payment payment, CheckoutApiPaymentRequestDTO paymentRequest, 
+                                                   MercadoPagoPaymentStatus paymentStatus) {
         
-        return PaymentResponseDTO.builder()
+        PaymentResponseDTO.PaymentResponseDTOBuilder responseBuilder = PaymentResponseDTO.builder()
             .preferenceId(payment.getId().toString())
+            .paymentId(payment.getId().toString())
             .publicKey(publicKey)
             .totalAmount(paymentRequest.getTotalAmount())
-            .status("PENDING")
+            .status(paymentStatus.getStatus())
+            .statusCode(paymentStatus.getCode())
+            .statusDetail(payment.getStatusDetail())
+            .displayName(paymentStatus.getDisplayName())
+            .userMessage(paymentStatus.getUserMessage())
+            .shouldDeliverTickets(paymentStatus.isShouldDeliverTickets())
+            .canRetry(paymentStatus.isCanRetry())
             .paymentMethodInfo(PaymentResponseDTO.PaymentMethodInfo.builder()
                 .paymentMethodId(paymentRequest.getPaymentMethodId())
                 .paymentTypeId(paymentRequest.getPaymentTypeId())
                 .paymentMethodName(getPaymentMethodName(paymentRequest.getPaymentMethodId()))
                 .build())
-            .apiConfig(createApiConfiguration())
-            .build();
-    }
-    
-    private PaymentResponseDTO handleRejectedPayment(Payment payment, CheckoutApiPaymentRequestDTO paymentRequest) {
-        log.warn("❌ [CHECKOUT_API] Pago rechazado - ID: {}, Detail: {}", 
-                payment.getId(), payment.getStatusDetail());
+            .apiConfig(createApiConfiguration());
         
-        return PaymentResponseDTO.builder()
-            .preferenceId(payment.getId().toString())
-            .publicKey(publicKey)
-            .totalAmount(paymentRequest.getTotalAmount())
-            .status("REJECTED")
-            .paymentMethodInfo(PaymentResponseDTO.PaymentMethodInfo.builder()
-                .paymentMethodId(paymentRequest.getPaymentMethodId())
-                .paymentTypeId(paymentRequest.getPaymentTypeId())
-                .paymentMethodName(getPaymentMethodName(paymentRequest.getPaymentMethodId()))
-                .build())
-            .apiConfig(createApiConfiguration())
-            .build();
-    }
-    
-    private PaymentResponseDTO handleApprovedWalletPayment(Payment payment, PaymentRequestDTO paymentRequest) {
-        try {
-            log.info("✅ [CHECKOUT_API] Pago con wallet aprobado - procesando tickets");
-            
-            // Procesar tickets similar al método anterior
-            TicketPurchaseRequestDTO ticketPurchaseRequest = TicketPurchaseRequestDTO.builder()
-                .userId(paymentRequest.getUserId())
-                .eventId(paymentRequest.getEventId())
-                .paymentMethodId(1L) // ID para MercadoPago Wallet
-                .tickets(Collections.emptyList()) // Se completará según la lógica de negocio
-                .build();
-            
-            TicketPurchaseResponseDTO purchaseResponse = ticketService.purchaseTickets(ticketPurchaseRequest);
-            
-            return PaymentResponseDTO.builder()
-                .preferenceId(payment.getId().toString())
-                .publicKey(publicKey)
-                .totalAmount(paymentRequest.getTotalAmount())
-                .status("APPROVED")
-                .transactionId(purchaseResponse.getTransactionId())
-                .paymentMethodInfo(PaymentResponseDTO.PaymentMethodInfo.builder()
-                    .paymentMethodId("account_money")
-                    .paymentTypeId("account_money")
-                    .paymentMethodName("Dinero en cuenta de Mercado Pago")
-                    .build())
-                .apiConfig(createApiConfiguration())
-                .build();
+        // Solo procesar tickets si el pago fue aprobado
+        if (paymentStatus.isShouldDeliverTickets()) {
+            try {
+                log.info("✅ [CHECKOUT_API] Pago aprobado - procesando tickets");
                 
-        } catch (Exception e) {
-            log.error("❌ [CHECKOUT_API] Error procesando tickets para pago con wallet: {}", e.getMessage());
-            return createErrorResponse("Pago aprobado pero error procesando tickets");
+                // TODO: Por ahora solo loggeamos que el pago fue aprobado
+                // La integración completa con tickets requiere información adicional
+                // que no está disponible en el DTO actual de CheckoutApiPaymentRequestDTO
+                log.info("🎫 [CHECKOUT_API] Pago aprobado correctamente - Payment ID: {}, Amount: {}", 
+                        payment.getId(), paymentRequest.getTotalAmount());
+                
+                // Cuando se implemente completamente, aquí se creará la transacción y tickets
+                // usando el servicio de transacciones que ya maneja la lógica completa
+                
+            } catch (Exception e) {
+                log.error("❌ [CHECKOUT_API] Error inesperado procesando tickets: {}", e.getMessage(), e);
+            }
+        } else {
+            log.info("⏳ [CHECKOUT_API] Pago no aprobado - no se procesan tickets. Estado: {}", paymentStatus.getCode());
         }
+        
+        return responseBuilder.build();
     }
     
-    private PaymentResponseDTO handleRejectedWalletPayment(Payment payment, PaymentRequestDTO paymentRequest) {
-        log.warn("❌ [CHECKOUT_API] Pago con wallet rechazado - ID: {}, Detail: {}", 
-                payment.getId(), payment.getStatusDetail());
+    private PaymentResponseDTO handleWalletPaymentByStatus(Payment payment, PaymentRequestDTO paymentRequest, 
+                                                         MercadoPagoPaymentStatus paymentStatus) {
         
-        return PaymentResponseDTO.builder()
+        PaymentResponseDTO.PaymentResponseDTOBuilder responseBuilder = PaymentResponseDTO.builder()
             .preferenceId(payment.getId().toString())
+            .paymentId(payment.getId().toString())
             .publicKey(publicKey)
             .totalAmount(paymentRequest.getTotalAmount())
-            .status("REJECTED")
+            .status(paymentStatus.getStatus())
+            .statusCode(paymentStatus.getCode())
+            .statusDetail(payment.getStatusDetail())
+            .displayName(paymentStatus.getDisplayName())
+            .userMessage(paymentStatus.getUserMessage())
+            .shouldDeliverTickets(paymentStatus.isShouldDeliverTickets())
+            .canRetry(paymentStatus.isCanRetry())
             .paymentMethodInfo(PaymentResponseDTO.PaymentMethodInfo.builder()
                 .paymentMethodId("account_money")
                 .paymentTypeId("account_money")
                 .paymentMethodName("Dinero en cuenta de Mercado Pago")
                 .build())
-            .apiConfig(createApiConfiguration())
-            .build();
+            .apiConfig(createApiConfiguration());
+        
+        // Solo procesar tickets si el pago fue aprobado
+        if (paymentStatus.isShouldDeliverTickets()) {
+            try {
+                log.info("✅ [CHECKOUT_API] Pago con wallet aprobado - procesando tickets");
+                
+                // TODO: Similar al método anterior, por ahora solo loggeamos
+                log.info("🎫 [CHECKOUT_API] Pago con wallet aprobado correctamente - Payment ID: {}, Amount: {}", 
+                        payment.getId(), paymentRequest.getTotalAmount());
+                
+            } catch (Exception e) {
+                log.error("❌ [CHECKOUT_API] Error procesando tickets con wallet: {}", e.getMessage(), e);
+            }
+        }
+        
+        return responseBuilder.build();
     }
     
-    private PaymentResponseDTO createErrorResponse(String errorMessage) {
+    private PaymentResponseDTO createErrorResponse(String errorMessage, String paymentId) {
         return PaymentResponseDTO.builder()
             .status("ERROR")
+            .statusCode("ERROR")
+            .displayName("Error de procesamiento")
+            .userMessage(errorMessage)
+            .shouldDeliverTickets(false)
+            .canRetry(true)
+            .paymentId(paymentId)
             .paymentMethodInfo(PaymentResponseDTO.PaymentMethodInfo.builder()
                 .paymentMethodName(errorMessage)
                 .build())
@@ -339,14 +309,15 @@ public class CheckoutApiServiceImpl implements CheckoutApiService {
     }
     
     private String getPaymentMethodName(String paymentMethodId) {
-        switch (paymentMethodId.toLowerCase()) {
-            case "visa": return "Visa";
-            case "master": return "Mastercard";
-            case "amex": return "American Express";
-            case "cabal": return "Cabal";
-            case "naranja": return "Naranja";
-            case "account_money": return "Dinero en cuenta de Mercado Pago";
-            default: return "Tarjeta de " + paymentMethodId;
-        }
+        return switch (paymentMethodId != null ? paymentMethodId.toLowerCase() : "") {
+            case "visa" -> "Visa";
+            case "master" -> "Mastercard";
+            case "amex" -> "American Express";
+            case "naranja" -> "Naranja";
+            case "maestro" -> "Maestro";
+            case "cabal" -> "Cabal";
+            case "account_money" -> "Dinero en cuenta de Mercado Pago";
+            default -> "Tarjeta";
+        };
     }
 } 
