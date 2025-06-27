@@ -71,6 +71,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     // Buscar eventos futuros donde el artista es el artista principal
     List<Event> findByMainArtistIdAndStartDateTimeAfter(Long artistId, LocalDateTime startDateTime);
 
+    // Contar eventos futuros donde el artista es el artista principal
+    @Query("SELECT COUNT(e) FROM Event e WHERE e.mainArtist.id = :artistId AND e.startDateTime > :now")
+    Long countByMainArtistIdAndStartDateTimeAfter(@Param("artistId") Long artistId, @Param("now") LocalDateTime now);
+
+    // Contar eventos pasados donde el artista es el artista principal
+    @Query("SELECT COUNT(e) FROM Event e WHERE e.mainArtist.id = :artistId AND e.startDateTime <= :now")
+    Long countByMainArtistIdAndStartDateTimeBefore(@Param("artistId") Long artistId, @Param("now") LocalDateTime now);
+
     // Verificar si existe un evento solapado en el mismo venue
     @Query("SELECT COUNT(e) > 0 FROM Event e WHERE e.venue.id = :venueId " +
             "AND ((e.startDateTime <= :endDateTime AND e.endDateTime >= :startDateTime) " +

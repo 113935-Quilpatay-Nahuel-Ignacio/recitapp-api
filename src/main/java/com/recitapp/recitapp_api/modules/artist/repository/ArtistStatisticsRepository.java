@@ -18,8 +18,9 @@ public interface ArtistStatisticsRepository extends JpaRepository<ArtistStatisti
     @Query("SELECT COUNT(f) FROM ArtistFollower f WHERE f.artist.id = :artistId")
     Long countFollowersForArtist(@Param("artistId") Long artistId);
 
-    @Query("SELECT COUNT(e) FROM Event e JOIN EventArtist ea ON e.id = ea.event.id " +
-            "WHERE ea.artist.id = :artistId")
+    @Query("SELECT COUNT(DISTINCT e.id) FROM Event e WHERE " +
+            "e.mainArtist.id = :artistId OR " +
+            "EXISTS (SELECT ea FROM EventArtist ea WHERE ea.event.id = e.id AND ea.artist.id = :artistId)")
     Long countEventsForArtist(@Param("artistId") Long artistId);
 
     @Query("SELECT COALESCE(SUM(stats.totalEvents), 0) FROM ArtistStatistics stats")

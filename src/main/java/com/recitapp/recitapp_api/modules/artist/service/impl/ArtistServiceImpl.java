@@ -19,6 +19,7 @@ import com.recitapp.recitapp_api.modules.event.repository.EventRepository;
 import com.recitapp.recitapp_api.modules.user.entity.User;
 import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ArtistServiceImpl implements ArtistService {
@@ -247,28 +249,44 @@ public class ArtistServiceImpl implements ArtistService {
     @Override
     @Transactional(readOnly = true)
     public ArtistStatisticsDTO getArtistStatistics(Long artistId) {
+        log.info("🔍 [ARTIST STATS DEBUG] Getting statistics for artist ID: {}", artistId);
+        
         Artist artist = findArtistById(artistId);
+        log.info("🔍 [ARTIST STATS DEBUG] Found artist: {}", artist.getName());
 
         ArtistStatistics stats = artistStatisticsRepository.findByArtistId(artistId)
                 .orElseGet(() -> initializeArtistStatistics(artist));
 
         Long followerCount = artistStatisticsRepository.countFollowersForArtist(artistId);
+        log.info("🔍 [ARTIST STATS DEBUG] Follower count: {}", followerCount);
+        
         Long upcomingEventsCount = countUpcomingEvents(artistId);
+        log.info("🔍 [ARTIST STATS DEBUG] Upcoming events count: {}", upcomingEventsCount);
+        
         Long pastEventsCount = countPastEvents(artistId);
+        log.info("🔍 [ARTIST STATS DEBUG] Past events count: {}", pastEventsCount);
+        
+        Long totalEvents = upcomingEventsCount + pastEventsCount;
+        log.info("🔍 [ARTIST STATS DEBUG] Total events: {}", totalEvents);
 
         Float followerGrowthRate = 0.0f;
 
-        return ArtistStatisticsDTO.builder()
+        ArtistStatisticsDTO result = ArtistStatisticsDTO.builder()
                 .artistId(artist.getId())
                 .artistName(artist.getName())
                 .profileImage(artist.getProfileImage())
                 .totalFollowers(followerCount.intValue())
-                .totalEvents(upcomingEventsCount + pastEventsCount)
+                .totalEvents(totalEvents)
                 .upcomingEvents(upcomingEventsCount.intValue())
                 .pastEvents(pastEventsCount.intValue())
                 .lastUpdateDate(stats.getUpdateDate())
                 .followerGrowthRate(followerGrowthRate)
                 .build();
+        
+        log.info("🔍 [ARTIST STATS DEBUG] Final result: followers={}, upcoming={}, past={}, total={}", 
+                 result.getTotalFollowers(), result.getUpcomingEvents(), result.getPastEvents(), result.getTotalEvents());
+        
+        return result;
     }
 
     @Override
@@ -398,12 +416,32 @@ public class ArtistServiceImpl implements ArtistService {
 
     private Long countUpcomingEvents(Long artistId) {
         LocalDateTime now = LocalDateTime.now();
-        return eventArtistRepository.countUpcomingEventsByArtistId(artistId, now);
+        
+        // Use a single query to avoid duplicates if an artist is both main artist and in EventArtist table
+        String jpql = "SELECT COUNT(DISTINCT e.id) FROM Event e WHERE " +
+                      "e.startDateTime > :now AND (" +
+                      "e.mainArtist.id = :artistId OR " +
+                      "EXISTS (SELECT ea FROM EventArtist ea WHERE ea.event.id = e.id AND ea.artist.id = :artistId))";
+        
+        return entityManager.createQuery(jpql, Long.class)
+                .setParameter("artistId", artistId)
+                .setParameter("now", now)
+                .getSingleResult();
     }
 
     private Long countPastEvents(Long artistId) {
         LocalDateTime now = LocalDateTime.now();
-        return eventArtistRepository.countPastEventsByArtistId(artistId, now);
+        
+        // Use a single query to avoid duplicates if an artist is both main artist and in EventArtist table
+        String jpql = "SELECT COUNT(DISTINCT e.id) FROM Event e WHERE " +
+                      "e.startDateTime <= :now AND (" +
+                      "e.mainArtist.id = :artistId OR " +
+                      "EXISTS (SELECT ea FROM EventArtist ea WHERE ea.event.id = e.id AND ea.artist.id = :artistId))";
+        
+        return entityManager.createQuery(jpql, Long.class)
+                .setParameter("artistId", artistId)
+                .setParameter("now", now)
+                .getSingleResult();
     }
 
     private Artist mapToEntity(ArtistDTO dto) {
