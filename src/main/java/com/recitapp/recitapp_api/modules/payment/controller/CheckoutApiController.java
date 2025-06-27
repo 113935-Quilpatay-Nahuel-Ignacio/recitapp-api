@@ -32,6 +32,27 @@ public class CheckoutApiController {
     public ResponseEntity<PaymentResponseDTO> processCardPayment(
             @Valid @RequestBody CheckoutApiPaymentRequestDTO paymentRequest) {
         
+        // ========================================
+        // 🚨🚨🚨 CHECKOUT API CONTROLLER DEBUG 🚨🚨🚨
+        // ========================================
+        System.out.println("\n" +
+            "████████████████████████████████████████████████████████████████\n" +
+            "██                                                            ██\n" +
+            "██  🎯 ENDPOINT: /checkout-api/card-payment CALLED 🎯         ██\n" +
+            "██                                                            ██\n" +
+            "████████████████████████████████████████████████████████████████");
+        
+        System.out.println("🔍 [CHECKOUT_API_CONTROLLER] Event ID: " + paymentRequest.getEventId());
+        System.out.println("🔍 [CHECKOUT_API_CONTROLLER] User ID: " + paymentRequest.getUserId());
+        System.out.println("🔍 [CHECKOUT_API_CONTROLLER] Total Amount: " + paymentRequest.getTotalAmount());
+        if (paymentRequest.getCardInfo() != null) {
+            System.out.println("🔍 [CHECKOUT_API_CONTROLLER] Cardholder Name: '" + paymentRequest.getCardInfo().getCardholderName() + "'");
+        }
+        if (paymentRequest.getPayer() != null) {
+            System.out.println("🔍 [CHECKOUT_API_CONTROLLER] Payer Email: " + paymentRequest.getPayer().getEmail());
+        }
+        System.out.println("████████████████████████████████████████████████████████████████\n");
+        
         log.info("🚀 [CHECKOUT_API_CONTROLLER] Recibida petición de pago con tarjeta - Event: {}, Amount: {}", 
                 paymentRequest.getEventId(), paymentRequest.getTotalAmount());
         

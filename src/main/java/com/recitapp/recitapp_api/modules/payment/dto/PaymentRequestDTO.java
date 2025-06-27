@@ -19,6 +19,9 @@ public class PaymentRequestDTO {
     private BigDecimal totalAmount;
     private PayerDTO payer;
     
+    // Campo adicional para detección de códigos de prueba por nombre del titular
+    private String cardholderName;
+    
     @Data
     @Builder
     @NoArgsConstructor

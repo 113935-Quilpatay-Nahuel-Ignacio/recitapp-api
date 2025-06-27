@@ -122,9 +122,26 @@ public class PaymentController {
     }
 
     @PostMapping("/process-payment")
-    public ResponseEntity<PaymentResponseDTO> processPayment(
-            @Valid @RequestBody PaymentRequestDTO paymentRequest) 
-    {
+    public ResponseEntity<PaymentResponseDTO> processPayment(@RequestBody PaymentRequestDTO paymentRequest) {
+        
+        // ========================================
+        // 🚨🚨🚨 PAYMENT CONTROLLER DEBUG 🚨🚨🚨
+        // ========================================
+        System.out.println("\n" +
+            "████████████████████████████████████████████████████████████████\n" +
+            "██                                                            ██\n" +
+            "██  🎯 ENDPOINT: /process-payment CALLED 🎯                   ██\n" +
+            "██                                                            ██\n" +
+            "████████████████████████████████████████████████████████████████");
+        
+        System.out.println("🔍 [PAYMENT_CONTROLLER] Event ID: " + paymentRequest.getEventId());
+        System.out.println("🔍 [PAYMENT_CONTROLLER] User ID: " + paymentRequest.getUserId());
+        System.out.println("🔍 [PAYMENT_CONTROLLER] Total Amount: " + paymentRequest.getTotalAmount());
+        if (paymentRequest.getPayer() != null) {
+            System.out.println("🔍 [PAYMENT_CONTROLLER] Payer Email: " + paymentRequest.getPayer().getEmail());
+        }
+        System.out.println("████████████████████████████████████████████████████████████████\n");
+        
         try {
             log.info("Processing confirmed payment for event: {} and user: {}", 
                     paymentRequest.getEventId(), paymentRequest.getUserId());
