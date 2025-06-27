@@ -1,5 +1,6 @@
 package com.recitapp.recitapp_api.modules.venue.entity;
 
+import com.recitapp.recitapp_api.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -49,6 +50,10 @@ public class Venue {
 
     @Column(length = 2000)
     private String image;
+
+    @ManyToOne
+    @JoinColumn(name = "registrar_id")
+    private User registrar;
 
     @Column(nullable = false)
     private Boolean active;

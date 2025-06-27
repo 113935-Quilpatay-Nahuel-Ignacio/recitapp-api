@@ -34,4 +34,5 @@ public class VenueDTO {
     private LocalDateTime registrationDate;
     private LocalDateTime updatedAt;
     private List<VenueSectionDTO> sections;
+    private Long registrarId;
 }

@@ -4,6 +4,8 @@ import com.recitapp.recitapp_api.common.exception.RecitappException;
 import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
 import com.recitapp.recitapp_api.modules.event.entity.Event;
 import com.recitapp.recitapp_api.modules.event.repository.EventRepository;
+import com.recitapp.recitapp_api.modules.user.entity.User;
+import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
 import com.recitapp.recitapp_api.modules.venue.dto.*;
 import com.recitapp.recitapp_api.modules.venue.entity.Venue;
 import com.recitapp.recitapp_api.modules.venue.entity.VenueSection;
@@ -28,6 +30,7 @@ public class VenueServiceImpl implements VenueService {
     private final VenueRepository venueRepository;
     private final VenueSectionRepository venueSectionRepository;
     private final EventRepository eventRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -38,6 +41,59 @@ public class VenueServiceImpl implements VenueService {
 
         Venue venue = mapToEntity(venueDTO);
         venue.setActive(true);
+        
+        // Lógica de validación de capacidades
+        if (venueDTO.getSections() != null && !venueDTO.getSections().isEmpty()) {
+            int sectionsCapacitySum = venueDTO.getSections().stream()
+                    .mapToInt(VenueSectionDTO::getCapacity)
+                    .sum();
+            
+            if (venueDTO.getTotalCapacity() != null) {
+                // Si se especificó capacidad total, debe coincidir con la suma de secciones
+                if (!venueDTO.getTotalCapacity().equals(sectionsCapacitySum)) {
+                    throw new RecitappException(
+                        String.format("La capacidad total especificada (%d) no coincide con la suma de las capacidades de las secciones (%d). " +
+                                     "Las capacidades deben ser iguales.", 
+                                     venueDTO.getTotalCapacity(), sectionsCapacitySum)
+                    );
+                }
+            } else {
+                // Si no se especificó capacidad total, se calcula automáticamente
+                venue.setTotalCapacity(sectionsCapacitySum);
+            }
+        } else if (venueDTO.getTotalCapacity() == null) {
+            // Si no hay secciones ni capacidad total especificada, se establece en 0
+            venue.setTotalCapacity(0);
+        }
+        
+        Venue savedVenue = venueRepository.save(venue);
+
+        // Si se proporcionaron secciones, crearlas después de guardar el venue
+        if (venueDTO.getSections() != null && !venueDTO.getSections().isEmpty()) {
+            for (VenueSectionDTO sectionDTO : venueDTO.getSections()) {
+                createVenueSectionInternal(savedVenue.getId(), sectionDTO);
+            }
+        }
+
+        return mapToDTO(savedVenue);
+    }
+
+    @Override
+    @Transactional
+    public VenueDTO createVenue(VenueDTO venueDTO, Long registrarId) {
+        if (venueRepository.existsByName(venueDTO.getName())) {
+            throw new RecitappException("Ya existe un recinto con el nombre: " + venueDTO.getName());
+        }
+
+        Venue venue = mapToEntity(venueDTO);
+        venue.setActive(true);
+        
+        // Asignar el registrar si se proporciona
+        if (registrarId != null) {
+            User registrar = userRepository.findById(registrarId)
+                    .orElseThrow(() -> new RecitappException("Usuario registrador no encontrado con ID: " + registrarId));
+            venue.setRegistrar(registrar);
+        }
         
         // Lógica de validación de capacidades
         if (venueDTO.getSections() != null && !venueDTO.getSections().isEmpty()) {
@@ -501,6 +557,13 @@ public class VenueServiceImpl implements VenueService {
         return venuePage.map(this::mapToDTO);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public VenueDTO getVenueForEdit(Long id) {
+        Venue venue = findVenueById(id);
+        return mapToDTO(venue);
+    }
+
     // Métodos auxiliares
     private Venue findVenueById(Long id) {
         return venueRepository.findById(id)
@@ -564,6 +627,7 @@ public class VenueServiceImpl implements VenueService {
                 .latitude(entity.getLatitude())
                 .longitude(entity.getLongitude())
                 .sections(sections)
+                .registrarId(entity.getRegistrar() != null ? entity.getRegistrar().getId() : null)
                 .build();
     }
 

@@ -1,11 +1,11 @@
 package com.recitapp.recitapp_api.modules.venue.controller;
 
+import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
+import com.recitapp.recitapp_api.modules.user.entity.User;
+import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
 import com.recitapp.recitapp_api.modules.venue.dto.*;
 import com.recitapp.recitapp_api.modules.venue.service.VenueService;
-import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
-import com.recitapp.recitapp_api.modules.user.entity.User;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,37 +57,94 @@ public class VenueController {
         return "ADMIN".equals(roleName) || "MODERADOR".equals(roleName) || "REGISTRADOR_EVENTO".equals(roleName);
     }
 
+    /**
+     * Verifica si el usuario actual puede modificar un venue
+     */
+    private boolean canModifyVenue(User user, Long venueId) {
+        if (user == null || user.getRole() == null) {
+            return false;
+        }
+        
+        String roleName = user.getRole().getName();
+        
+        // ADMIN y MODERADOR pueden modificar cualquier venue
+        if ("ADMIN".equals(roleName) || "MODERADOR".equals(roleName)) {
+            return true;
+        }
+        
+        // REGISTRADOR_EVENTO solo puede modificar venues que creó
+        if ("REGISTRADOR_EVENTO".equals(roleName)) {
+            try {
+                VenueDTO venue = venueService.getVenueForEdit(venueId);
+                return venue.getRegistrarId() != null && venue.getRegistrarId().equals(user.getId());
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        
+        return false;
+    }
+
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<VenueDTO> createVenue(@Valid @RequestBody VenueDTO venueDTO) {
-        VenueDTO createdVenue = venueService.createVenue(venueDTO);
+    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
+    public ResponseEntity<VenueDTO> createVenue(@Valid @RequestBody VenueDTO venueDTO,
+                                                @RequestParam(required = false) Long registrarId) {
+        User currentUser = getCurrentUser();
+        
+        // Si no se proporciona registrarId y el usuario es REGISTRADOR_EVENTO, usar su ID
+        if (registrarId == null && currentUser != null && 
+            "REGISTRADOR_EVENTO".equals(currentUser.getRole().getName())) {
+            registrarId = currentUser.getId();
+        }
+        
+        VenueDTO createdVenue = venueService.createVenue(venueDTO, registrarId);
         return new ResponseEntity<>(createdVenue, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueDTO> updateVenue(@PathVariable Long id, @Valid @RequestBody VenueUpdateDTO venueDTO) {
+        User currentUser = getCurrentUser();
+        
+        if (!canModifyVenue(currentUser, id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
         VenueDTO updatedVenue = venueService.updateVenue(id, venueDTO);
         return ResponseEntity.ok(updatedVenue);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteVenue(@PathVariable Long id) {
+        User currentUser = getCurrentUser();
+        
+        if (!canModifyVenue(currentUser, id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
         venueService.deleteVenue(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/deactivate")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueDTO> deactivateVenue(@PathVariable Long id) {
+        User currentUser = getCurrentUser();
+        
+        if (!canModifyVenue(currentUser, id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
         VenueDTO deactivatedVenue = venueService.deactivateVenue(id);
         return ResponseEntity.ok(deactivatedVenue);
     }
 
     @PatchMapping("/{id}/activate")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueDTO> activateVenue(@PathVariable Long id) {
+        User currentUser = getCurrentUser();
+        
+        if (!canModifyVenue(currentUser, id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
         VenueDTO activatedVenue = venueService.activateVenue(id);
         return ResponseEntity.ok(activatedVenue);
     }
@@ -133,29 +191,44 @@ public class VenueController {
     }
 
     @PostMapping("/{venueId}/sections")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueSectionDTO> createVenueSection(
             @PathVariable Long venueId,
             @Valid @RequestBody VenueSectionDTO sectionDTO) {
+        User currentUser = getCurrentUser();
+        
+        if (!canModifyVenue(currentUser, venueId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
         VenueSectionDTO createdSection = venueService.createVenueSection(venueId, sectionDTO);
         return new ResponseEntity<>(createdSection, HttpStatus.CREATED);
     }
 
     @PutMapping("/{venueId}/sections/{sectionId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueSectionDTO> updateVenueSection(
             @PathVariable Long venueId,
             @PathVariable Long sectionId,
             @Valid @RequestBody VenueSectionDTO sectionDTO) {
+        User currentUser = getCurrentUser();
+        
+        if (!canModifyVenue(currentUser, venueId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
         VenueSectionDTO updatedSection = venueService.updateVenueSection(venueId, sectionId, sectionDTO);
         return ResponseEntity.ok(updatedSection);
     }
 
     @DeleteMapping("/{venueId}/sections/{sectionId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteVenueSection(
             @PathVariable Long venueId,
             @PathVariable Long sectionId) {
+        User currentUser = getCurrentUser();
+        
+        if (!canModifyVenue(currentUser, venueId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
         venueService.deleteVenueSection(venueId, sectionId);
         return ResponseEntity.noContent().build();
     }

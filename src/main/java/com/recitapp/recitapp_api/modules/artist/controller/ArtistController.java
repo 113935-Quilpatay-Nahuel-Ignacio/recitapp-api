@@ -1,12 +1,18 @@
 package com.recitapp.recitapp_api.modules.artist.controller;
 
+import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.artist.dto.*;
 import com.recitapp.recitapp_api.modules.artist.service.ArtistService;
 import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
+import com.recitapp.recitapp_api.modules.user.entity.User;
+import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,27 +23,98 @@ import java.util.List;
 public class ArtistController {
 
     private final ArtistService artistService;
+    private final UserRepository userRepository;
+
+    /**
+     * Obtiene el usuario actual autenticado
+     */
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String email = userDetails.getUsername();
+            return userRepository.findByEmail(email)
+                    .orElse(null);
+        }
+        return null;
+    }
+
+    /**
+     * Verifica si el usuario actual puede modificar un artista
+     */
+    private boolean canModifyArtist(User user, Long artistId) {
+        if (user == null || user.getRole() == null) {
+            return false;
+        }
+        
+        String roleName = user.getRole().getName();
+        
+        // ADMIN y MODERADOR pueden modificar cualquier artista
+        if ("ADMIN".equals(roleName) || "MODERADOR".equals(roleName)) {
+            return true;
+        }
+        
+        // REGISTRADOR_EVENTO solo puede modificar artistas que creó
+        if ("REGISTRADOR_EVENTO".equals(roleName)) {
+            try {
+                ArtistDTO artist = artistService.getArtistForEdit(artistId);
+                return artist.getRegistrarId() != null && artist.getRegistrarId().equals(user.getId());
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        
+        return false;
+    }
 
     @PostMapping
-    public ResponseEntity<ArtistDTO> createArtist(@Valid @RequestBody ArtistDTO artistDTO) {
-        ArtistDTO createdArtist = artistService.createArtist(artistDTO);
+    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
+    public ResponseEntity<ArtistDTO> createArtist(@Valid @RequestBody ArtistDTO artistDTO,
+                                                  @RequestParam(required = false) Long registrarId) {
+        User currentUser = getCurrentUser();
+        
+        // Si no se proporciona registrarId y el usuario es REGISTRADOR_EVENTO, usar su ID
+        if (registrarId == null && currentUser != null && 
+            "REGISTRADOR_EVENTO".equals(currentUser.getRole().getName())) {
+            registrarId = currentUser.getId();
+        }
+        
+        ArtistDTO createdArtist = artistService.createArtist(artistDTO, registrarId);
         return new ResponseEntity<>(createdArtist, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ArtistDTO> updateArtist(@PathVariable Long id, @Valid @RequestBody ArtistDTO artistDTO) {
+        User currentUser = getCurrentUser();
+        
+        if (!canModifyArtist(currentUser, id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
         ArtistDTO updatedArtist = artistService.updateArtist(id, artistDTO);
         return ResponseEntity.ok(updatedArtist);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteArtist(@PathVariable Long id) {
+        User currentUser = getCurrentUser();
+        
+        if (!canModifyArtist(currentUser, id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
         artistService.deleteArtist(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<ArtistDTO> deactivateArtist(@PathVariable Long id) {
+        User currentUser = getCurrentUser();
+        
+        if (!canModifyArtist(currentUser, id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
         ArtistDTO deactivatedArtist = artistService.deactivateArtist(id);
         return ResponseEntity.ok(deactivatedArtist);
     }

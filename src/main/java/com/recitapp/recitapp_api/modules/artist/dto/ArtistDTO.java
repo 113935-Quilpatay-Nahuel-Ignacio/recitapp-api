@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -29,4 +30,7 @@ public class ArtistDTO {
     private String bandcampUrl;
     private Boolean active;
     private List<Long> genreIds;
+    private Long registrarId;
+    private LocalDateTime registrationDate;
+    private LocalDateTime updatedAt;
 }

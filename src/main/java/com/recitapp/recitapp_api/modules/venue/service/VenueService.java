@@ -11,12 +11,16 @@ import org.springframework.data.domain.Pageable;
 
 public interface VenueService {
     VenueDTO createVenue(VenueDTO venueDTO);
+    
+    VenueDTO createVenue(VenueDTO venueDTO, Long registrarId);
 
     VenueDTO updateVenue(Long id, VenueUpdateDTO venueDTO);
 
     void deleteVenue(Long id);
     VenueDTO deactivateVenue(Long id);
     VenueDTO activateVenue(Long id);
+    
+    VenueDTO getVenueForEdit(Long id);
 
     List<VenueDTO> getAvailableVenues(LocalDateTime startDateTime, LocalDateTime endDateTime);
     VenueAvailabilityDTO checkVenueAvailability(Long venueId, LocalDateTime startDateTime, LocalDateTime endDateTime);

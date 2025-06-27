@@ -16,6 +16,8 @@ import com.recitapp.recitapp_api.modules.event.entity.Event;
 import com.recitapp.recitapp_api.modules.event.entity.EventArtist;
 import com.recitapp.recitapp_api.modules.event.repository.EventArtistRepository;
 import com.recitapp.recitapp_api.modules.event.repository.EventRepository;
+import com.recitapp.recitapp_api.modules.user.entity.User;
+import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,7 @@ public class ArtistServiceImpl implements ArtistService {
     private final ArtistFollowerRepository artistFollowerRepository;
     private final EventArtistRepository eventArtistRepository;
     private final EventRepository eventRepository;
+    private final UserRepository userRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -50,6 +53,34 @@ public class ArtistServiceImpl implements ArtistService {
 
         Artist artist = mapToEntity(artistDTO);
         artist.setActive(true);
+        Artist savedArtist = artistRepository.save(artist);
+
+        initializeArtistStatistics(savedArtist);
+
+        if (artistDTO.getGenreIds() != null && !artistDTO.getGenreIds().isEmpty()) {
+            artistDTO.getGenreIds().forEach(genreId -> addGenreToArtist(savedArtist.getId(), genreId));
+        }
+
+        return mapToDTO(savedArtist);
+    }
+
+    @Override
+    @Transactional
+    public ArtistDTO createArtist(ArtistDTO artistDTO, Long registrarId) {
+        if (artistRepository.findByName(artistDTO.getName()).isPresent()) {
+            throw new RecitappException("Ya existe un artista con el nombre: " + artistDTO.getName());
+        }
+
+        Artist artist = mapToEntity(artistDTO);
+        artist.setActive(true);
+        
+        // Asignar el registrar si se proporciona
+        if (registrarId != null) {
+            User registrar = userRepository.findById(registrarId)
+                    .orElseThrow(() -> new RecitappException("Usuario registrador no encontrado con ID: " + registrarId));
+            artist.setRegistrar(registrar);
+        }
+        
         Artist savedArtist = artistRepository.save(artist);
 
         initializeArtistStatistics(savedArtist);
@@ -339,6 +370,13 @@ public class ArtistServiceImpl implements ArtistService {
         return artistRepository.findByName(name).isPresent();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ArtistDTO getArtistForEdit(Long id) {
+        Artist artist = findArtistById(id);
+        return mapToDTO(artist);
+    }
+
     private Artist findArtistById(Long id) {
         return artistRepository.findById(id)
                 .orElseThrow(() -> new RecitappException("Artista no encontrado con ID: " + id));
@@ -394,6 +432,9 @@ public class ArtistServiceImpl implements ArtistService {
                 .instagramUrl(entity.getInstagramUrl())
                 .bandcampUrl(entity.getBandcampUrl())
                 .active(entity.getActive())
+                .registrarId(entity.getRegistrar() != null ? entity.getRegistrar().getId() : null)
+                .registrationDate(entity.getRegistrationDate())
+                .updatedAt(entity.getUpdatedAt())
                 .build();
     }
 

@@ -8,6 +8,8 @@ import java.util.List;
 public interface ArtistService {
 
     ArtistDTO createArtist(ArtistDTO artistDTO);
+    
+    ArtistDTO createArtist(ArtistDTO artistDTO, Long registrarId);
 
     ArtistDTO updateArtist(Long id, ArtistDTO artistDTO);
 
@@ -16,6 +18,8 @@ public interface ArtistService {
     ArtistDTO deactivateArtist(Long id);
 
     ArtistDetailDTO getArtistDetail(Long id);
+    
+    ArtistDTO getArtistForEdit(Long id);
 
     List<ArtistDTO> getAllArtists(Boolean activeOnly);
 

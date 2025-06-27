@@ -1,5 +1,6 @@
 package com.recitapp.recitapp_api.modules.artist.entity;
 
+import com.recitapp.recitapp_api.modules.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -41,6 +42,10 @@ public class Artist {
 
     @Column(name = "bandcamp_url", length = 500)
     private String bandcampUrl;
+
+    @ManyToOne
+    @JoinColumn(name = "registrar_id")
+    private User registrar;
 
     @Column(name = "registration_date")
     private LocalDateTime registrationDate;
