@@ -1,5 +1,6 @@
 package com.recitapp.recitapp_api.modules.user.service;
 
+import com.recitapp.recitapp_api.modules.notification.service.EmailService;
 import com.recitapp.recitapp_api.modules.user.entity.PasswordResetToken;
 import com.recitapp.recitapp_api.modules.user.entity.Role;
 import com.recitapp.recitapp_api.modules.user.entity.User;
@@ -9,16 +10,16 @@ import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.security.SecureRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -28,8 +29,8 @@ public class PasswordResetService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final JavaMailSender mailSender;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     @Value("${app.password-reset.expiration:3600000}") // 1 hora por defecto
     private long passwordResetExpiration;
@@ -37,17 +38,8 @@ public class PasswordResetService {
     @Value("${app.password-reset.max-attempts:3}") // Máximo 3 intentos por hora
     private int maxResetAttempts;
 
-    @Value("${app.frontend.url:http://localhost:3000}")
+    @Value("${app.frontend.url:http://localhost:4200}")
     private String frontendUrl;
-
-    @Value("${spring.mail.username}")
-    private String fromEmail;
-    
-    @Value("${spring.mail.host}")
-    private String mailHost;
-    
-    @Value("${spring.mail.port}")
-    private String mailPort;
 
     @Transactional
     public boolean initiatePasswordReset(String email) {
@@ -104,39 +96,23 @@ public class PasswordResetService {
     private void sendPasswordResetEmail(User user, String token) {
         try {
             log.info("Preparando email de recuperación para: {}", user.getEmail());
-            log.info("Email configurado desde: {}", fromEmail);
             log.info("Frontend URL configurado: {}", frontendUrl);
-            log.info("Mail host configurado: {}", mailHost);
-            log.info("Mail port configurado: {}", mailPort);
             
-            // Verificar configuración de JavaMailSender
-            log.info("JavaMailSender instance: {}", mailSender != null ? "OK" : "NULL");
-            
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(user.getEmail());
-            message.setSubject("Recuperación de Contraseña - RecitApp");
-            
-            String resetUrl = frontendUrl + "/reset-password?token=" + token;
+            String resetUrl = frontendUrl + "/auth/reset-password?token=" + token;
             log.info("URL de reset generada: {}", resetUrl);
             
-            String emailContent = String.format(
-                "Hola %s,\n\n" +
-                "Has solicitado restablecer tu contraseña en RecitApp.\n\n" +
-                "Haz clic en el siguiente enlace para crear una nueva contraseña:\n" +
-                "%s\n\n" +
-                "Este enlace expirará en 1 hora.\n\n" +
-                "Si no solicitaste este cambio, puedes ignorar este email.\n\n" +
-                "Saludos,\n" +
-                "El equipo de RecitApp",
-                user.getFirstName(),
-                resetUrl
+            // Preparar variables para el template
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("firstName", user.getFirstName() != null ? user.getFirstName() : "Usuario");
+            variables.put("resetUrl", resetUrl);
+            
+            // Enviar email usando template HTML
+            emailService.sendTemplateEmail(
+                user.getEmail(),
+                "🔑 Recuperación de Contraseña - RecitApp",
+                "email/password-reset",
+                variables
             );
-            
-            message.setText(emailContent);
-            
-            log.info("Enviando email usando JavaMailSender...");
-            mailSender.send(message);
             
             log.info("✅ Email de recuperación enviado exitosamente a: {}", user.getEmail());
         } catch (Exception e) {
@@ -229,30 +205,21 @@ public class PasswordResetService {
         try {
             log.info("Enviando credenciales temporales a: {}", user.getEmail());
             
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(user.getEmail());
-            message.setSubject("Cuenta Temporal Creada - RecitApp");
+            String loginUrl = frontendUrl + "/auth/login";
             
-            String emailContent = String.format(
-                "Hola,\n\n" +
-                "Hemos creado una cuenta temporal para ti en RecitApp.\n\n" +
-                "Tus credenciales temporales son:\n" +
-                "Email: %s\n" +
-                "Contraseña temporal: %s\n\n" +
-                "IMPORTANTE: Esta es una contraseña temporal. Por seguridad, te recomendamos:\n" +
-                "1. Iniciar sesión con estas credenciales\n" +
-                "2. Ir a tu perfil y cambiar la contraseña por una más memorable\n" +
-                "3. Completar tu información personal\n\n" +
-                "Si no solicitaste esta cuenta, puedes ignorar este email.\n\n" +
-                "Saludos,\n" +
-                "El equipo de RecitApp",
+            // Preparar variables para el template
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("email", user.getEmail());
+            variables.put("temporaryPassword", temporaryPassword);
+            variables.put("loginUrl", loginUrl);
+            
+            // Enviar email usando template HTML
+            emailService.sendTemplateEmail(
                 user.getEmail(),
-                temporaryPassword
+                "🎵 Cuenta Temporal Creada - RecitApp",
+                "email/temporary-credentials",
+                variables
             );
-            
-            message.setText(emailContent);
-            mailSender.send(message);
             
             log.info("✅ Credenciales temporales enviadas a: {}", user.getEmail());
         } catch (Exception e) {

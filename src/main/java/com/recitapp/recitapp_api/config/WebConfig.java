@@ -1,56 +1,37 @@
 package com.recitapp.recitapp_api.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import jakarta.annotation.PostConstruct;
-import java.nio.file.Paths;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    @Value("${app.file.upload-dir:uploads}")
-    private String uploadDir;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @PostConstruct
-    public void init() {
-        // WebConfig initialized
-    }
-
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Explicit resource handlers to avoid conflicts with API endpoints
-        registry.addResourceHandler("/static/**")
-                .addResourceLocations("classpath:/static/");
+    public void configureObjectMapper() {
+        // Configurar formateo de fechas para Argentina
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         
-        registry.addResourceHandler("/css/**")
-                .addResourceLocations("classpath:/static/css/");
+        JavaTimeModule javaTimeModule = new JavaTimeModule();
+        javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(dateTimeFormatter));
+        javaTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(dateTimeFormatter));
         
-        registry.addResourceHandler("/js/**")
-                .addResourceLocations("classpath:/static/js/");
+        objectMapper.registerModule(javaTimeModule);
         
-        registry.addResourceHandler("/images/**")
-                .addResourceLocations("classpath:/static/images/");
+        // Configurar timezone de Argentina para el ObjectMapper
+        objectMapper.setTimeZone(java.util.TimeZone.getTimeZone("America/Argentina/Buenos_Aires"));
         
-        // Handler para archivos subidos
-        String uploadsPath = Paths.get(uploadDir).toAbsolutePath().toString();
-        uploadsPath = uploadsPath.replace("\\", "/"); // Normalize path separators for URL
-        if (!uploadsPath.endsWith("/")) {
-            uploadsPath += "/";
-        }
-        
-        registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:" + uploadsPath)
-                .setCachePeriod(3600)
-                .resourceChain(true);
-    }
-
-    @Override
-    public void configurePathMatch(PathMatchConfigurer configurer) {
-        // Ensure REST controllers are properly matched
-        configurer.setUseTrailingSlashMatch(true);
+        System.out.println("✅ Configuración de timezone Argentina aplicada a ObjectMapper");
     }
 }
