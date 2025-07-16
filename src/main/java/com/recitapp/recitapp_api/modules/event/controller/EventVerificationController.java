@@ -1,6 +1,5 @@
 package com.recitapp.recitapp_api.modules.event.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
 import com.recitapp.recitapp_api.modules.event.dto.EventDetailDTO;
 import com.recitapp.recitapp_api.modules.event.dto.EventFilterDTO;
@@ -19,7 +18,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/events/verification")
 @RequiredArgsConstructor
-@RequireRole({"ADMIN", "MODERADOR"})
 public class EventVerificationController {
 
     private final EventService eventService;

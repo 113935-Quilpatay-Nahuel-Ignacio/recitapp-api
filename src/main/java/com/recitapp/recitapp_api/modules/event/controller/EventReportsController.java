@@ -1,6 +1,5 @@
 package com.recitapp.recitapp_api.modules.event.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.event.dto.EventFilterDTO;
 import com.recitapp.recitapp_api.modules.event.dto.EventStatisticsDTO;
 import com.recitapp.recitapp_api.modules.event.service.EventReportService;
@@ -27,7 +26,6 @@ public class EventReportsController {
      * Genera un informe de asistencia de eventos
      */
     @GetMapping("/attendance")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Map<String, Object>> getAttendanceReport(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
@@ -42,7 +40,6 @@ public class EventReportsController {
      * Genera estadísticas de ventas de entradas para eventos
      */
     @GetMapping("/ticket-sales")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Map<String, Object>> getTicketSalesReport(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
@@ -57,7 +54,6 @@ public class EventReportsController {
      * Obtiene estadísticas para múltiples eventos
      */
     @GetMapping("/statistics")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<List<EventStatisticsDTO>> getEventsStatistics(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,

@@ -1,6 +1,6 @@
 package com.recitapp.recitapp_api.modules.venue.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
+
 import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
 import com.recitapp.recitapp_api.modules.user.entity.User;
 import com.recitapp.recitapp_api.modules.user.repository.UserRepository;
@@ -86,7 +86,6 @@ public class VenueController {
     }
 
     @PostMapping
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<VenueDTO> createVenue(@Valid @RequestBody VenueDTO venueDTO,
                                                 @RequestParam(required = false) Long registrarId) {
         User currentUser = getCurrentUser();

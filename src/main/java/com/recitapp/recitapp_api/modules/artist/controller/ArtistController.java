@@ -1,6 +1,6 @@
 package com.recitapp.recitapp_api.modules.artist.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
+
 import com.recitapp.recitapp_api.modules.artist.dto.*;
 import com.recitapp.recitapp_api.modules.artist.service.ArtistService;
 import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
@@ -68,7 +68,6 @@ public class ArtistController {
     }
 
     @PostMapping
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<ArtistDTO> createArtist(@Valid @RequestBody ArtistDTO artistDTO,
                                                   @RequestParam(required = false) Long registrarId) {
         User currentUser = getCurrentUser();

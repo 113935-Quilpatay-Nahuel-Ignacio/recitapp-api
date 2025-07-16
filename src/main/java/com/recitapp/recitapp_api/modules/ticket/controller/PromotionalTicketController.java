@@ -1,6 +1,6 @@
 package com.recitapp.recitapp_api.modules.ticket.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
+
 import com.recitapp.recitapp_api.modules.ticket.dto.PromotionalTicketRequestDTO;
 import com.recitapp.recitapp_api.modules.ticket.dto.PromotionalTicketResponseDTO;
 import com.recitapp.recitapp_api.modules.ticket.service.impl.PromotionalTicketService;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/admin/tickets/promotional")
 @RequiredArgsConstructor
-@RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
+
 public class PromotionalTicketController {
 
     private final PromotionalTicketService promotionalTicketService;

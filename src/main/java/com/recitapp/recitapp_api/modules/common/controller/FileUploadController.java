@@ -1,6 +1,6 @@
 package com.recitapp.recitapp_api.modules.common.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
+
 import com.recitapp.recitapp_api.modules.common.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,6 @@ public class FileUploadController {
     private final FileStorageService fileStorageService;
 
     @PostMapping("/upload/event-flyer")
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Map<String, Object>> uploadEventFlyer(@RequestParam("file") MultipartFile file) {
         log.info("📤 [UPLOAD CONTROLLER] Received event flyer upload request");
         log.info("📤 [UPLOAD CONTROLLER] File details - name: '{}', size: {} bytes, type: '{}'", 
@@ -51,7 +50,6 @@ public class FileUploadController {
     }
 
     @PostMapping("/upload/event-sections")
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Map<String, Object>> uploadEventSections(@RequestParam("file") MultipartFile file) {
         try {
             String fileUrl = fileStorageService.storeImage(file, "event-sections");
@@ -75,7 +73,6 @@ public class FileUploadController {
     }
 
     @PostMapping("/validate-image")
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Map<String, Object>> validateImage(@RequestParam("file") MultipartFile file) {
         Map<String, Object> response = new HashMap<>();
         
@@ -94,7 +91,6 @@ public class FileUploadController {
     }
 
     @PostMapping("/upload/artist-profile")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<Map<String, Object>> uploadArtistProfile(@RequestParam("file") MultipartFile file) {
         try {
             String fileUrl = fileStorageService.storeImage(file, "artist-profiles");
@@ -118,7 +114,6 @@ public class FileUploadController {
     }
 
     @PostMapping("/upload/venue-image")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<Map<String, Object>> uploadVenueImage(@RequestParam("file") MultipartFile file) {
         try {
             String fileUrl = fileStorageService.storeImage(file, "venue-images");
@@ -142,7 +137,6 @@ public class FileUploadController {
     }
 
     @PostMapping("/upload/notification-image")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<Map<String, Object>> uploadNotificationImage(@RequestParam("file") MultipartFile file) {
         try {
             String fileUrl = fileStorageService.storeImage(file, "notification-images");
@@ -166,7 +160,6 @@ public class FileUploadController {
     }
 
     @PostMapping("/upload/user-profile")
-    @RequireRole({"ADMIN", "USER"})
     public ResponseEntity<Map<String, Object>> uploadUserProfile(@RequestParam("file") MultipartFile file) {
         try {
             String fileUrl = fileStorageService.storeImage(file, "user-profiles");
@@ -190,7 +183,6 @@ public class FileUploadController {
     }
 
     @DeleteMapping("/delete")
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Map<String, Object>> deleteFile(@RequestParam("fileUrl") String fileUrl) {
         try {
             boolean deleted = fileStorageService.deleteFile(fileUrl);

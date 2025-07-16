@@ -1,6 +1,5 @@
 package com.recitapp.recitapp_api.modules.user.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.user.dto.AdminUserRegistrationDTO;
 import com.recitapp.recitapp_api.modules.user.dto.UserResponseDTO;
 import com.recitapp.recitapp_api.modules.user.service.UserService;

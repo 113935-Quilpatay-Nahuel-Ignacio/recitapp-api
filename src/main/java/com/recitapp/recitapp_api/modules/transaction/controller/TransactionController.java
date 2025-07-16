@@ -1,6 +1,5 @@
 package com.recitapp.recitapp_api.modules.transaction.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.transaction.dto.*;
 import com.recitapp.recitapp_api.modules.transaction.service.TransactionService;
 import com.recitapp.recitapp_api.modules.transaction.service.EnhancedRefundService;
@@ -26,7 +25,6 @@ public class TransactionController {
 
     // RAPP113935-97: Register payment transaction
     @PostMapping
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<TransactionDTO> registerTransaction(@RequestBody TransactionDTO transactionDTO) {
         TransactionDTO savedTransaction = transactionService.registerTransaction(transactionDTO);
         return new ResponseEntity<>(savedTransaction, HttpStatus.CREATED);
@@ -34,7 +32,6 @@ public class TransactionController {
 
     // RAPP113935-98: Modify transaction status
     @PatchMapping("/{transactionId}/status")
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<TransactionDTO> updateTransactionStatus(
             @PathVariable Long transactionId,
             @RequestBody TransactionStatusUpdateDTO statusUpdateDTO) {
@@ -60,7 +57,6 @@ public class TransactionController {
     }
 
     @PostMapping("/report")
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<TransactionStatisticsDTO> generateTransactionStatistics(
             @RequestBody TransactionReportDTO reportDTO) {
         TransactionStatisticsDTO statistics = transactionService.generateTransactionStatistics(reportDTO);
@@ -69,7 +65,6 @@ public class TransactionController {
 
     // RAPP113935-102: Register refund
     @PostMapping("/refund")
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<TransactionDTO> processRefund(@RequestBody RefundRequestDTO refundRequest) {
         TransactionDTO refundTransaction = transactionService.processRefund(refundRequest);
         return ResponseEntity.ok(refundTransaction);
@@ -77,7 +72,6 @@ public class TransactionController {
 
     // Enhanced refund with MercadoPago integration and wallet fallback
     @PostMapping("/refund/enhanced")
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<EnhancedRefundResponseDTO> processEnhancedRefund(@RequestBody EnhancedRefundRequestDTO refundRequest) {
         EnhancedRefundResponseDTO refundResponse = enhancedRefundService.processEnhancedRefund(refundRequest);
         return ResponseEntity.ok(refundResponse);
@@ -92,7 +86,6 @@ public class TransactionController {
 
     // Get all transactions
     @GetMapping
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<List<TransactionDTO>> getAllTransactions(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {

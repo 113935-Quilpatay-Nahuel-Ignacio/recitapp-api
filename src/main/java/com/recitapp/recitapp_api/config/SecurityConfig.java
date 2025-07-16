@@ -28,7 +28,7 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
-// @EnableMethodSecurity(prePostEnabled = true)  // TEMPORALMENTE DESHABILITADO PARA DEBUG
+
 @RequiredArgsConstructor
 @Order(2) // SEGUNDA PRIORIDAD - Se ejecuta DESPUÉS de PaymentSecurityConfig
 public class SecurityConfig {

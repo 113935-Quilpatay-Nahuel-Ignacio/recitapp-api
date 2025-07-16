@@ -1,6 +1,5 @@
 package com.recitapp.recitapp_api.modules.event.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.event.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -15,7 +14,6 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/events/cleanup")
 @RequiredArgsConstructor
-@RequireRole({"ADMIN"})
 public class EventCleanupController {
 
     private final EventService eventService;

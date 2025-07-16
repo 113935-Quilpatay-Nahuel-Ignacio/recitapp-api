@@ -518,7 +518,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
             // En una implementación real, consultarías el estado del pago via API
             log.info("Getting payment status for payment ID: {}", paymentId);
             
-            // Simulación temporal - en producción usar PaymentClient
+    
             if (paymentId.startsWith("MP_")) {
                 return "approved"; // Simulación para pagos de prueba
             }
@@ -554,39 +554,29 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                     paymentRequest.getEventId(), paymentRequest.getUserId());
             
             // ========================================
-            // 🚨🚨🚨 DEBUG SUPER VISIBLE 🚨🚨🚨
+    
             // ========================================
-            System.out.println("\n" +
-                "████████████████████████████████████████████████████████████████\n" +
-                "██                                                            ██\n" +
-                "██  🚨 PROCESS CONFIRMED PAYMENT - DEBUG MODE 🚨              ██\n" +
-                "██                                                            ██\n" +
-                "████████████████████████████████████████████████████████████████");
             
-            System.out.println("🔍 [DEBUG] Event ID: " + paymentRequest.getEventId());
-            System.out.println("🔍 [DEBUG] User ID: " + paymentRequest.getUserId());
-            System.out.println("🔍 [DEBUG] Total Amount: " + paymentRequest.getTotalAmount());
+            
+            
             
             if (paymentRequest.getPayer() != null) {
-                System.out.println("🔍 [DEBUG] Payer Email: " + paymentRequest.getPayer().getEmail());
-                System.out.println("🔍 [DEBUG] Payer First Name: " + paymentRequest.getPayer().getFirstName());
-                System.out.println("🔍 [DEBUG] Payer Last Name: " + paymentRequest.getPayer().getLastName());
+                
             } else {
-                System.out.println("🔍 [DEBUG] Payer: NULL");
+    
             }
             
             if (paymentRequest.getTickets() != null) {
-                System.out.println("🔍 [DEBUG] Tickets Count: " + paymentRequest.getTickets().size());
+    
                 for (int i = 0; i < paymentRequest.getTickets().size(); i++) {
                     var ticket = paymentRequest.getTickets().get(i);
-                    System.out.println("🔍 [DEBUG] Ticket " + i + " - Attendee: " + 
-                        ticket.getAttendeeFirstName() + " " + ticket.getAttendeeLastName());
+                    
                 }
             } else {
-                System.out.println("🔍 [DEBUG] Tickets: NULL");
+
             }
             
-            System.out.println("████████████████████████████████████████████████████████████████\n");
+    
             
             // WORKAROUND: Detectar tarjetas de prueba por email del payer ANTES de procesar tickets
             String finalStatus = "COMPLETED";
@@ -600,7 +590,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
             String payerEmail = paymentRequest.getPayer().getEmail();
             
             // ========================================
-            // 🚨🚨🚨 DEBUG TARJETAS DE PRUEBA 🚨🚨🚨
+    
             // ========================================
             System.out.println("\n" +
                 "████████████████████████████████████████████████████████████████\n" +
@@ -609,8 +599,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                 "██                                                            ██\n" +
                 "████████████████████████████████████████████████████████████████");
             
-            System.out.println("🔍 [TEST_CARD_DEBUG] Payer Email: '" + payerEmail + "'");
-            System.out.println("🔍 [TEST_CARD_DEBUG] Cardholder Name: '" + paymentRequest.getCardholderName() + "'");
+            
             
             // 🎯 PRIORIDAD 1: Verificar cardholderName (método oficial de MercadoPago)
             String testCodeFromCardholder = null;
@@ -620,7 +609,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                     cardholderName.equals("FUND") || cardholderName.equals("SECU") || cardholderName.equals("EXPI") || 
                     cardholderName.equals("FORM") || cardholderName.equals("APRO")) {
                     testCodeFromCardholder = cardholderName;
-                    System.out.println("🎯 [TEST_CARD_DEBUG] Found test code in CARDHOLDER NAME: '" + testCodeFromCardholder + "' (OFFICIAL METHOD)");
+    
                 }
             }
             
@@ -632,7 +621,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                     emailPrefix.equals("FUND") || emailPrefix.equals("SECU") || emailPrefix.equals("EXPI") || 
                     emailPrefix.equals("FORM") || emailPrefix.equals("APRO")) {
                     testCodeFromEmail = emailPrefix;
-                    System.out.println("🔍 [TEST_CARD_DEBUG] Found test code in email prefix: '" + testCodeFromEmail + "' (FALLBACK METHOD)");
+    
                 }
             }
             
@@ -647,7 +636,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                             upperName.equals("FUND") || upperName.equals("SECU") || upperName.equals("EXPI") || 
                             upperName.equals("FORM") || upperName.equals("APRO")) {
                             testCodeFromAttendee = upperName;
-                            System.out.println("🔍 [TEST_CARD_DEBUG] Found test code in attendee name: '" + testCodeFromAttendee + "' (ADDITIONAL FALLBACK)");
+            
                             break;
                         }
                     }
@@ -658,20 +647,20 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
             String testCode = null;
             if (testCodeFromCardholder != null) {
                 testCode = testCodeFromCardholder;
-                System.out.println("🎯 [TEST_CARD_DEBUG] Using Test Code from CARDHOLDER NAME: '" + testCode + "' (PRIMARY METHOD)");
+    
                 log.info("🧪 [PROCESS_PAYMENT] Detectando tarjeta de prueba - CardholderName: '{}', Code: '{}'", paymentRequest.getCardholderName(), testCode);
             } else if (testCodeFromEmail != null) {
                 testCode = testCodeFromEmail;
-                System.out.println("🔍 [TEST_CARD_DEBUG] Using Test Code from Email: '" + testCode + "' (FALLBACK METHOD)");
+    
                 log.info("🧪 [PROCESS_PAYMENT] Detectando tarjeta de prueba - Email: '{}', Code: '{}'", payerEmail, testCode);
             } else if (testCodeFromAttendee != null) {
                 testCode = testCodeFromAttendee;
-                System.out.println("🔍 [TEST_CARD_DEBUG] Using Test Code from Attendee Name: '" + testCode + "' (ADDITIONAL FALLBACK)");
+    
                 log.info("🧪 [PROCESS_PAYMENT] Detectando tarjeta de prueba - Attendee Name: '{}', Code: '{}'", testCodeFromAttendee, testCode);
             }
             
             // ========================================
-            // 🚨🚨🚨 FINAL STATUS DEBUG 🚨🚨🚨
+    
             // ========================================
             System.out.println("\n" +
                 "████████████████████████████████████████████████████████████████\n" +
@@ -680,12 +669,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                 "██                                                            ██\n" +
                 "████████████████████████████████████████████████████████████████");
             
-            System.out.println("🔍 [FINAL_STATUS] Status: '" + finalStatus + "'");
-            System.out.println("🔍 [FINAL_STATUS] Status Code: '" + finalStatusCode + "'");
-            System.out.println("🔍 [FINAL_STATUS] Display Name: '" + finalDisplayName + "'");
-            System.out.println("🔍 [FINAL_STATUS] Should Deliver Tickets: " + finalShouldDeliverTickets);
-            System.out.println("🔍 [FINAL_STATUS] Can Retry: " + finalCanRetry);
-            System.out.println("████████████████████████████████████████████████████████████████\n");
+            
             
             // Procesar el código de prueba detectado
             if (testCode != null) {
@@ -697,7 +681,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                         finalUserMessage = "Tu pago fue rechazado. Verifica los datos de tu tarjeta o intenta con otra tarjeta.";
                         finalShouldDeliverTickets = false;
                         finalCanRetry = true;
-                        System.out.println("🔴🔴🔴 [TEST_CARD_DEBUG] CASE OTHE MATCHED! Setting status to REJECTED 🔴🔴🔴");
+        
                         log.info("🔴 [PROCESS_PAYMENT] PRUEBA OTHE - Simulando pago rechazado");
                         break;
                     case "CONT":
@@ -707,7 +691,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                         finalUserMessage = "Tu pago está siendo procesado. Te daremos tus entradas cuando se complete el proceso.";
                         finalShouldDeliverTickets = false;
                         finalCanRetry = false;
-                        System.out.println("🟡🟡🟡 [TEST_CARD_DEBUG] CASE CONT MATCHED! Setting status to PENDING 🟡🟡🟡");
+        
                         log.info("🟡 [PROCESS_PAYMENT] PRUEBA CONT - Simulando pago pendiente");
                         break;
                     case "CALL":
@@ -717,7 +701,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                         finalUserMessage = "Tu pago fue rechazado. Debes contactar a tu banco para autorizar el pago. Puedes intentar con otra tarjeta.";
                         finalShouldDeliverTickets = false;
                         finalCanRetry = true;
-                        System.out.println("🔴🔴🔴 [TEST_CARD_DEBUG] CASE CALL MATCHED! Setting status to REJECTED 🔴🔴🔴");
+        
                         log.info("🔴 [PROCESS_PAYMENT] PRUEBA CALL - Simulando pago rechazado con validación");
                         break;
                     case "FUND":
@@ -727,7 +711,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                         finalUserMessage = "Tu pago fue rechazado por fondos insuficientes. Verifica tu saldo o intenta con otra tarjeta.";
                         finalShouldDeliverTickets = false;
                         finalCanRetry = true;
-                        System.out.println("🔴🔴🔴 [TEST_CARD_DEBUG] CASE FUND MATCHED! Setting status to REJECTED 🔴🔴🔴");
+        
                         log.info("🔴 [PROCESS_PAYMENT] PRUEBA FUND - Simulando pago rechazado por fondos");
                         break;
                     case "SECU":
@@ -737,7 +721,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                         finalUserMessage = "Tu pago fue rechazado por código de seguridad inválido. Verifica el CVV de tu tarjeta e intenta nuevamente.";
                         finalShouldDeliverTickets = false;
                         finalCanRetry = true;
-                        System.out.println("🔴🔴🔴 [TEST_CARD_DEBUG] CASE SECU MATCHED! Setting status to REJECTED 🔴🔴🔴");
+        
                         log.info("🔴 [PROCESS_PAYMENT] PRUEBA SECU - Simulando pago rechazado por CVV");
                         break;
                     case "EXPI":
@@ -747,7 +731,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                         finalUserMessage = "Tu pago fue rechazado por fecha de vencimiento inválida. Verifica la fecha de tu tarjeta e intenta nuevamente.";
                         finalShouldDeliverTickets = false;
                         finalCanRetry = true;
-                        System.out.println("🔴🔴🔴 [TEST_CARD_DEBUG] CASE EXPI MATCHED! Setting status to REJECTED 🔴🔴🔴");
+        
                         log.info("🔴 [PROCESS_PAYMENT] PRUEBA EXPI - Simulando pago rechazado por fecha");
                         break;
                     case "FORM":
@@ -757,25 +741,20 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                         finalUserMessage = "Tu pago fue rechazado por datos incorrectos. Verifica todos los campos del formulario e intenta nuevamente.";
                         finalShouldDeliverTickets = false;
                         finalCanRetry = true;
-                        System.out.println("🔴🔴🔴 [TEST_CARD_DEBUG] CASE FORM MATCHED! Setting status to REJECTED 🔴🔴🔴");
+        
                         log.info("🔴 [PROCESS_PAYMENT] PRUEBA FORM - Simulando pago rechazado por formulario");
                         break;
                     case "APRO":
-                        System.out.println("🟢🟢🟢 [TEST_CARD_DEBUG] CASE APRO MATCHED! Keeping status APPROVED 🟢🟢🟢");
+        
                         log.info("🟢 [PROCESS_PAYMENT] PRUEBA APRO - Manteniendo pago aprobado");
                         break;
                     default:
-                        System.out.println("⚪⚪⚪ [TEST_CARD_DEBUG] DEFAULT CASE - Test code '" + testCode + "' not recognized ⚪⚪⚪");
+        
                         log.info("💳 [PROCESS_PAYMENT] Email normal - Usando pago aprobado por defecto");
                         break;
                 }
             } else {
-                System.out.println("⚪⚪⚪ [TEST_CARD_DEBUG] NO TEST CODE DETECTED - Using default approved status ⚪⚪⚪");
-                System.out.println("💡 [TEST_CARD_DEBUG] To test different payment states, use:");
-                System.out.println("    - 🎯 PRIMARY: Cardholder Name field in MercadoPago form: OTHE, CONT, CALL, etc. (OFFICIAL METHOD)");
-                System.out.println("    - 🔍 FALLBACK: Email format: othe@gmail.com, cont@yahoo.com, call@hotmail.com, etc.");
-                System.out.println("    - 🔍 ADDITIONAL: Attendee name: OTHE, CONT, CALL, FUND, SECU, EXPI, FORM, APRO");
-                System.out.println("    - Works with ANY email domain!");
+                
             }
             
             // Declarar variables para la respuesta

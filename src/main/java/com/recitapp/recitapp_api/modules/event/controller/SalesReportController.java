@@ -1,6 +1,5 @@
 package com.recitapp.recitapp_api.modules.event.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.event.dto.SalesReportRequestDTO;
 import com.recitapp.recitapp_api.modules.event.dto.SalesReportResponseDTO;
 import com.recitapp.recitapp_api.modules.event.service.impl.SalesReportService;
@@ -17,7 +16,6 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/reports/sales")
 @RequiredArgsConstructor
-@RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
 public class SalesReportController {
 
     private final SalesReportService salesReportService;

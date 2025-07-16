@@ -741,7 +741,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     // ==========================================
-    // WHATSAPP NOTIFICATION - TEMPORALMENTE DESACTIVADO
+    
     // ==========================================
     // NOTA: WhatsApp requiere cuenta Twilio de pago
     
@@ -882,7 +882,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /*
-    // WHATSAPP PARAMETERS - TEMPORALMENTE DESACTIVADO
+    
     private Map<String, String> buildWhatsAppParameters(Long eventId, Long artistId, Long venueId) {
         Map<String, String> parameters = new HashMap<>();
         
@@ -940,7 +940,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private String getUserPhoneNumber(Long userId) {
-        // TODO: Agregar campo phone number a la entidad User
+
         // Por ahora retornamos null
         return null;
     }
