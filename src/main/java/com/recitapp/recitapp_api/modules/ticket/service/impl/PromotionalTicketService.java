@@ -117,7 +117,8 @@ public class PromotionalTicketService {
         ticket.setEvent(event);
         ticket.setSection(section);
         ticket.setStatus(ticketStatus);
-        ticket.setSalePrice(BigDecimal.ZERO);
+        // Set sale price to null for gift tickets, BigDecimal.ZERO for promotional tickets
+        ticket.setSalePrice(ticketDTO.isGift() ? null : BigDecimal.ZERO);
         ticket.setIdentificationCode(generateUniqueTicketCode());
         ticket.setUser(recipientUser);
         ticket.setAssignedUserFirstName(ticketDTO.getAttendeeFirstName());

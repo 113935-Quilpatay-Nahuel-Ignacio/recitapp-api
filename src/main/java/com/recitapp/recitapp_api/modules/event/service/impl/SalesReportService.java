@@ -245,6 +245,7 @@ public class SalesReportService {
         BigDecimal totalRevenue = tickets.stream()
                 .filter(ticket -> "VENDIDA".equals(ticket.getStatus().getName()) || "USADA".equals(ticket.getStatus().getName()))
                 .map(Ticket::getSalePrice)
+                .filter(price -> price != null) // Filter out null prices (gift tickets)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         reportBuilder.totalRevenue(totalRevenue);
 
@@ -301,6 +302,7 @@ public class SalesReportService {
             BigDecimal totalRevenue = sectionTickets.stream()
                     .filter(ticket -> "VENDIDA".equals(ticket.getStatus().getName()) || "USADA".equals(ticket.getStatus().getName()))
                     .map(Ticket::getSalePrice)
+                    .filter(price -> price != null) // Filter out null prices (gift tickets)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             // Calculate occupancy rate
@@ -396,6 +398,7 @@ public class SalesReportService {
             BigDecimal revenue = segmentTickets.stream()
                     .filter(ticket -> "VENDIDA".equals(ticket.getStatus().getName()) || "USADA".equals(ticket.getStatus().getName()))
                     .map(Ticket::getSalePrice)
+                    .filter(price -> price != null) // Filter out null prices (gift tickets)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             // Create time segment DTO

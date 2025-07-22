@@ -35,7 +35,7 @@ public class Ticket {
     @JoinColumn(name = "status_id", nullable = false)
     private TicketStatus status;
 
-    @Column(name = "sale_price", nullable = false, precision = 10, scale = 2)
+    @Column(name = "sale_price", nullable = true, precision = 10, scale = 2)
     private BigDecimal salePrice;
 
     @Column(name = "identification_code", length = 50, unique = true, nullable = false)
