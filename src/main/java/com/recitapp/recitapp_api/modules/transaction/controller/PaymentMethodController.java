@@ -1,6 +1,5 @@
 package com.recitapp.recitapp_api.modules.transaction.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.transaction.dto.PaymentMethodDTO;
 import com.recitapp.recitapp_api.modules.transaction.service.TransactionService;
 import lombok.RequiredArgsConstructor;
@@ -26,14 +25,12 @@ public class PaymentMethodController {
     }
 
     @PostMapping
-    @RequireRole({"ADMIN"})
     public ResponseEntity<PaymentMethodDTO> createPaymentMethod(@RequestBody PaymentMethodDTO paymentMethodDTO) {
         PaymentMethodDTO createdMethod = transactionService.createPaymentMethod(paymentMethodDTO);
         return new ResponseEntity<>(createdMethod, HttpStatus.CREATED);
     }
 
     @PutMapping("/{paymentMethodId}")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<PaymentMethodDTO> updatePaymentMethod(
             @PathVariable Long paymentMethodId,
             @RequestBody PaymentMethodDTO paymentMethodDTO) {
@@ -42,7 +39,6 @@ public class PaymentMethodController {
     }
 
     @DeleteMapping("/{paymentMethodId}")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<Void> deletePaymentMethod(@PathVariable Long paymentMethodId) {
         transactionService.deletePaymentMethod(paymentMethodId);
         return ResponseEntity.noContent().build();

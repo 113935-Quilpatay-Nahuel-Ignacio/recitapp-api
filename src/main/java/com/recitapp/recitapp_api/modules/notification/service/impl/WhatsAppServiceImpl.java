@@ -29,12 +29,7 @@ import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 
-// ==========================================
-// WHATSAPP SERVICE - TEMPORALMENTE DESACTIVADO
-// ==========================================
-// NOTA: WhatsApp requiere cuenta Twilio de pago
-// Este código se mantiene comentado para futuras implementaciones
-// Para activar: descomentar @Service y toda la implementación
+
 
 // @Service
 @Slf4j

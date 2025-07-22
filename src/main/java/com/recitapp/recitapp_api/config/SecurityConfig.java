@@ -28,7 +28,7 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
-// @EnableMethodSecurity(prePostEnabled = true)  // TEMPORALMENTE DESHABILITADO PARA DEBUG
+
 @RequiredArgsConstructor
 @Order(2) // SEGUNDA PRIORIDAD - Se ejecuta DESPUÉS de PaymentSecurityConfig
 public class SecurityConfig {
@@ -55,7 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/favicon.ico").permitAll()
                         // Static file access - uploads directory
-                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/uploads/**", "/api/uploads/**").permitAll()
                         .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
                         
                         // Endpoints con roles específicos

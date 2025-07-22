@@ -1,6 +1,5 @@
 package com.recitapp.recitapp_api.modules.event.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
 import com.recitapp.recitapp_api.modules.event.dto.EventStatusUpdateRequest;
 import com.recitapp.recitapp_api.modules.event.entity.EventStatus;
@@ -41,7 +40,6 @@ public class EventStatusController {
      * Actualiza el estado de un evento
      */
     @PatchMapping("/{eventId}/status")  // Resulta en: /events/{eventId}/status
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<EventDTO> updateEventStatus(
             @PathVariable Long eventId,
             @Valid @RequestBody EventStatusUpdateRequest request) {
@@ -54,7 +52,6 @@ public class EventStatusController {
      * Marca un evento como cancelado
      */
     @PatchMapping("/{eventId}/cancel")  // Resulta en: /events/{eventId}/cancel
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Void> cancelEvent(
             @PathVariable Long eventId,
             @RequestParam(required = false) String cancellationReason) {
@@ -67,7 +64,6 @@ public class EventStatusController {
      * Marca eventos pasados como finalizados
      */
     @PatchMapping("/batch/finalize-past")  // Resulta en: /events/batch/finalize-past
-    @RequireRole({"ADMIN", "MODERADOR"})
     public ResponseEntity<Integer> finalizePastEvents() {
         int updatedEvents = 0; // eventService.finalizePastEvents();
         return ResponseEntity.ok(updatedEvents);

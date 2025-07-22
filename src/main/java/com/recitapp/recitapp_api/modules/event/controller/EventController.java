@@ -1,6 +1,6 @@
 package com.recitapp.recitapp_api.modules.event.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
+
 import com.recitapp.recitapp_api.modules.common.service.FileStorageService;
 import com.recitapp.recitapp_api.modules.event.dto.EventDTO;
 import com.recitapp.recitapp_api.modules.event.dto.EventDetailDTO;
@@ -86,7 +86,6 @@ public class EventController {
     }
 
     @PostMapping
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<EventDTO> createEvent(@Valid @RequestBody EventDTO eventDTO,
                                                 @RequestParam Long registrarId) {
         EventDTO createdEvent = eventService.createEvent(eventDTO, registrarId);
@@ -94,7 +93,6 @@ public class EventController {
     }
 
     @PostMapping("/with-files")
-    @RequireRole({"ADMIN", "REGISTRADOR_EVENTO"})
     public ResponseEntity<EventDTO> createEventWithFiles(
             @RequestParam("eventData") String eventDataJson,
             @RequestParam("registrarId") Long registrarId,
@@ -105,7 +103,7 @@ public class EventController {
             // Aquí implementaremos la lógica para manejar archivos
             // Por ahora mantenemos compatibilidad con el método existente
             
-            // TODO: Implementar parsing de JSON y manejo de archivos
+    
             throw new RuntimeException("Endpoint en desarrollo");
             
         } catch (Exception e) {
@@ -114,7 +112,6 @@ public class EventController {
     }
 
     @PutMapping("/{id}")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<EventDTO> updateEvent(@PathVariable Long id,
                                                 @Valid @RequestBody EventDTO eventDTO) {
         
@@ -128,7 +125,6 @@ public class EventController {
     }
 
     @DeleteMapping("/{id}")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
         
         User currentUser = getCurrentUser();
@@ -147,7 +143,6 @@ public class EventController {
     }
 
     @GetMapping("/{id}/edit")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<EventDTO> getEventForEdit(@PathVariable Long id) {
         
         User currentUser = getCurrentUser();
@@ -217,7 +212,6 @@ public class EventController {
     }
 
     @PatchMapping("/{id}/verify")
-    @RequireRole({"ADMIN", "MODERADOR"})
     public ResponseEntity<EventDTO> verifyEvent(@PathVariable Long id,
                                                 @RequestParam Long moderatorId) {
         EventDTO verifiedEvent = eventService.verifyEvent(id, moderatorId);
@@ -225,7 +219,6 @@ public class EventController {
     }
 
     @PatchMapping("/{id}/status-simple")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<EventDTO> updateEventStatus(@PathVariable Long id,
                                                       @RequestParam String statusName) {
         EventDTO updatedEvent = eventService.updateEventStatus(id, statusName);
@@ -233,7 +226,6 @@ public class EventController {
     }
 
     @PatchMapping("/{id}/cancel-event")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Void> cancelEvent(@PathVariable Long id) {
         eventService.cancelEvent(id);
         return ResponseEntity.noContent().build();
@@ -260,14 +252,12 @@ public class EventController {
     }
 
     @GetMapping("/{id}/statistics")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<EventStatisticsDTO> getEventStatistics(@PathVariable Long id) {
         EventStatisticsDTO statistics = eventService.getEventStatistics(id);
         return ResponseEntity.ok(statistics);
     }
 
     @PostMapping("/cleanup-canceled")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<Void> cleanupCanceledEvents(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime cutoffDate) {
         if (cutoffDate == null) {

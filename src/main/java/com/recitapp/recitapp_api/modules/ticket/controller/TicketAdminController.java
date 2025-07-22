@@ -1,6 +1,6 @@
 package com.recitapp.recitapp_api.modules.ticket.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
+
 import com.recitapp.recitapp_api.modules.ticket.dto.TicketDTO;
 import com.recitapp.recitapp_api.modules.ticket.service.TicketAdminService;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,6 @@ public class TicketAdminController {
      * @return Información sobre los tickets procesados
      */
     @PostMapping("/mark-expired")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<Map<String, Object>> markExpiredTickets() {
         Map<String, Object> result = ticketAdminService.markExpiredTickets();
         return ResponseEntity.ok(result);
@@ -39,7 +38,6 @@ public class TicketAdminController {
      * @return Lista de tickets que serían marcados como vencidos
      */
     @GetMapping("/preview-expired")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<List<TicketDTO>> previewExpiredTickets() {
         List<TicketDTO> expiredTickets = ticketAdminService.getTicketsToExpire();
         return ResponseEntity.ok(expiredTickets);
@@ -51,7 +49,6 @@ public class TicketAdminController {
      * @return Mapa con estadísticas de tickets
      */
     @GetMapping("/statistics")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<Map<String, Long>> getTicketStatistics() {
         Map<String, Long> statistics = ticketAdminService.getTicketStatistics();
         return ResponseEntity.ok(statistics);
@@ -64,7 +61,6 @@ public class TicketAdminController {
      * @return Resultado de la operación
      */
     @PostMapping("/mark-specific-expired")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<Map<String, Object>> markSpecificTicketsExpired(@RequestBody List<Long> ticketIds) {
         Map<String, Object> result = ticketAdminService.markSpecificTicketsExpired(ticketIds);
         return ResponseEntity.ok(result);

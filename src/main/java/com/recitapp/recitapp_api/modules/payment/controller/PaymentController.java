@@ -125,7 +125,7 @@ public class PaymentController {
     public ResponseEntity<PaymentResponseDTO> processPayment(@RequestBody PaymentRequestDTO paymentRequest) {
         
         // ========================================
-        // 🚨🚨🚨 PAYMENT CONTROLLER DEBUG 🚨🚨🚨
+
         // ========================================
         System.out.println("\n" +
             "████████████████████████████████████████████████████████████████\n" +

@@ -122,7 +122,7 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getNotificationsByVenue(venueId));
     }
 
-    // ===== ENDPOINTS DE TESTING Y GESTIÓN =====
+
 
     @PostMapping("/email/new-event")
     public ResponseEntity<String> sendNewEventEmail(@RequestBody NewEventEmailDTO dto) {
@@ -170,7 +170,7 @@ public class NotificationController {
         }
     }
 
-    // ===== PUSH NOTIFICATION TEST ENDPOINTS =====
+
 
     @PostMapping("/test/push")
     public ResponseEntity<String> testPushNotification(
@@ -367,11 +367,7 @@ public class NotificationController {
         }
     }
 
-    // ==========================================
-    // WHATSAPP ENDPOINTS - TEMPORALMENTE DESACTIVADOS
-    // ==========================================
-    // NOTA: WhatsApp requiere cuenta Twilio de pago
-    // Para activar: descomentar los endpoints y el servicio
+
     
     /*
     @PostMapping("/test/whatsapp")

@@ -1,6 +1,5 @@
 package com.recitapp.recitapp_api.modules.ticket.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.ticket.dto.TicketVerificationRequestDTO;
 import com.recitapp.recitapp_api.modules.ticket.dto.TicketVerificationResponseDTO;
 import com.recitapp.recitapp_api.modules.ticket.entity.TicketVerification;
@@ -34,11 +33,10 @@ public class TicketVerificationController {
      * @return The verification result
      */
     @PostMapping("/verify")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO", "VERIFICADOR_ENTRADAS"})
     public ResponseEntity<TicketVerificationResponseDTO> verifyTicket(
             @Valid @RequestBody TicketVerificationRequestDTO requestDTO) {
 
-        // Log access for debugging VERIFICADOR_ENTRADAS
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
@@ -57,7 +55,6 @@ public class TicketVerificationController {
      * @return A list of verification records
      */
     @GetMapping("/history/{ticketId}")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO", "VERIFICADOR_ENTRADAS"})
     public ResponseEntity<List<TicketVerification>> getTicketVerificationHistory(
             @PathVariable Long ticketId) {
 

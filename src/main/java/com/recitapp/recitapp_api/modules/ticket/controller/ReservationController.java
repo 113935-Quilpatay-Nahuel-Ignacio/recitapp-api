@@ -1,6 +1,5 @@
 package com.recitapp.recitapp_api.modules.ticket.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.ticket.entity.Ticket;
 import com.recitapp.recitapp_api.modules.ticket.service.impl.ReservationService;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/admin/reservations")
 @RequiredArgsConstructor
-@RequireRole({"ADMIN", "MODERADOR"})
 public class ReservationController {
 
     private final ReservationService reservationService;

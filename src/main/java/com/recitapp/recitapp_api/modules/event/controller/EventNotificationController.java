@@ -1,6 +1,5 @@
 package com.recitapp.recitapp_api.modules.event.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
 import com.recitapp.recitapp_api.modules.event.dto.ArtistNotificationRequest;
 import com.recitapp.recitapp_api.modules.event.dto.VenueNotificationRequest;
 import com.recitapp.recitapp_api.modules.notification.service.NotificationService;
@@ -16,7 +15,6 @@ public class EventNotificationController {
     private final NotificationService notificationService;
 
     @PostMapping("/{eventId}/notify-artist-followers")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Void> notifyArtistFollowers(
             @PathVariable Long eventId,
             @RequestBody ArtistNotificationRequest request) {
@@ -26,7 +24,6 @@ public class EventNotificationController {
     }
 
     @PostMapping("/{eventId}/notify-venue-followers")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Void> notifyVenueFollowers(
             @PathVariable Long eventId,
             @RequestBody VenueNotificationRequest request) {
@@ -36,7 +33,6 @@ public class EventNotificationController {
     }
 
     @PostMapping("/{eventId}/notify-modification")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Void> notifyEventModification(
             @PathVariable Long eventId,
             @RequestParam String changeDescription) {
@@ -46,7 +42,6 @@ public class EventNotificationController {
     }
 
     @PostMapping("/{eventId}/notify-cancellation")
-    @RequireRole({"ADMIN", "MODERADOR", "REGISTRADOR_EVENTO"})
     public ResponseEntity<Void> notifyEventCancellation(
             @PathVariable Long eventId) {
 

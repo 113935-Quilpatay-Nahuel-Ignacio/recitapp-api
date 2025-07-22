@@ -1,6 +1,6 @@
 package com.recitapp.recitapp_api.modules.notification.controller;
 
-import com.recitapp.recitapp_api.annotation.RequireRole;
+
 import com.recitapp.recitapp_api.modules.notification.dto.NotificationChannelDTO;
 import com.recitapp.recitapp_api.modules.notification.dto.NotificationTypeDTO;
 import com.recitapp.recitapp_api.modules.notification.service.NotificationService;
@@ -29,14 +29,12 @@ public class NotificationAdminController {
     }
 
     @PostMapping("/channels")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<NotificationChannelDTO> createNotificationChannel(
             @RequestBody NotificationChannelDTO channelDTO) {
         return new ResponseEntity<>(notificationService.createNotificationChannel(channelDTO), HttpStatus.CREATED);
     }
 
     @PutMapping("/channels/{channelId}")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<NotificationChannelDTO> updateNotificationChannel(
             @PathVariable Long channelId,
             @RequestBody NotificationChannelDTO channelDTO) {
@@ -44,7 +42,6 @@ public class NotificationAdminController {
     }
 
     @DeleteMapping("/channels/{channelId}")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<Void> deleteNotificationChannel(@PathVariable Long channelId) {
         notificationService.deleteNotificationChannel(channelId);
         return ResponseEntity.noContent().build();
@@ -56,14 +53,12 @@ public class NotificationAdminController {
     }
 
     @PostMapping("/types")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<NotificationTypeDTO> createNotificationType(
             @RequestBody NotificationTypeDTO typeDTO) {
         return new ResponseEntity<>(notificationService.createNotificationType(typeDTO), HttpStatus.CREATED);
     }
 
     @PutMapping("/types/{typeId}")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<NotificationTypeDTO> updateNotificationType(
             @PathVariable Long typeId,
             @RequestBody NotificationTypeDTO typeDTO) {
@@ -71,14 +66,12 @@ public class NotificationAdminController {
     }
 
     @PostMapping("/generate-recommendations")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<Void> generateWeeklyRecommendations() {
         notificationService.sendWeeklyRecommendations();
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/check-low-availability")
-    @RequireRole({"ADMIN"})
     public ResponseEntity<Void> checkLowAvailability() {
         notificationService.checkAndSendLowAvailabilityAlerts();
         return ResponseEntity.noContent().build();
