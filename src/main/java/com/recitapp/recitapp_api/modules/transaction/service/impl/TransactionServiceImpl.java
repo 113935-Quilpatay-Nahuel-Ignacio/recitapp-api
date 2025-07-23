@@ -617,40 +617,24 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     /**
-     * Generate time-based statistics by dividing the period into appropriate segments
+     * Generate time-based statistics by dividing the period into daily segments
      */
     private List<TransactionStatisticsDTO.TimeSegmentStatisticsDTO> generateTimeSegmentStatistics(
             List<Transaction> transactions, LocalDateTime startDate, LocalDateTime endDate) {
 
-        // Determine appropriate time segments based on period length
-        long daysBetween = ChronoUnit.DAYS.between(startDate.toLocalDate(), endDate.toLocalDate());
-
-        // Choose segment size based on period length
-        int segmentSizeHours;
-        if (daysBetween <= 1) {
-            // Less than a day: hourly segments
-            segmentSizeHours = 1;
-        } else if (daysBetween <= 7) {
-            // Less than a week: 6-hour segments
-            segmentSizeHours = 6;
-        } else if (daysBetween <= 30) {
-            // Less than a month: daily segments
-            segmentSizeHours = 24;
-        } else if (daysBetween <= 90) {
-            // Less than 3 months: weekly segments
-            segmentSizeHours = 24 * 7;
-        } else {
-            // Longer period: monthly segments
-            segmentSizeHours = 24 * 30;
-        }
+        // Always use daily segments (24 hours) for better visualization in bar charts
+        int segmentSizeHours = 24;
 
         List<TransactionStatisticsDTO.TimeSegmentStatisticsDTO> timeSegments = new ArrayList<>();
 
-        LocalDateTime segmentStart = startDate;
-        while (segmentStart.isBefore(endDate)) {
+        // Normalize start date to beginning of day for consistent daily segments
+        LocalDateTime segmentStart = startDate.toLocalDate().atStartOfDay();
+        LocalDateTime normalizedEndDate = endDate.toLocalDate().atTime(23, 59, 59);
+        
+        while (segmentStart.isBefore(normalizedEndDate)) {
             LocalDateTime segmentEnd = segmentStart.plusHours(segmentSizeHours);
-            if (segmentEnd.isAfter(endDate)) {
-                segmentEnd = endDate;
+            if (segmentEnd.isAfter(normalizedEndDate)) {
+                segmentEnd = normalizedEndDate;
             }
 
             // Find transactions in this segment
